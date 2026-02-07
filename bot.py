@@ -126,8 +126,10 @@ class TicketCloseView(discord.ui.View):
         await interaction.response.send_message(
             "Το ticket θα κλείσει σε 5 δευτερόλεπτα...", ephemeral=True
         )
-       await asyncio.sleep(5)
-       try:   
+
+        await asyncio.sleep(5)
+
+        try:
             await interaction.channel.delete(reason="Ticket closed")
         except:
             pass
@@ -145,7 +147,7 @@ class MainTicketSelect(discord.ui.Select):
             discord.SelectOption(label="Report", description="Αναφορά παίκτη / συμβάντος", emoji="📙"),
             discord.SelectOption(label="Support", description="Γενικό support", emoji="📩"),
         ]
-        super().__init__(placeholder="Επίλεξε κατηγορία ticket...", min_values=1, max_values=1, options=options)
+        super().__init__(placeholder="Επίλεξε κατηγορία ticket....", min_values=1, max_values=1, options=options)
 
     async def callback(self, interaction: discord.Interaction):
         guild = interaction.guild
@@ -316,7 +318,7 @@ async def jobpanel(ctx):
     embed = discord.Embed(
         title="📋 Job Tickets",
         description="Επέλεξε job category που θέλεις.",
-        color=discord.Color.blue()
+        color=discord.Color.green()
     )
     await ctx.send(embed=embed, view=JobTicketPanel())
     await ctx.reply("Το job ticket panel στάλθηκε.", delete_after=2)
@@ -343,6 +345,7 @@ async def on_ready():
 if __name__ == "__main__":
     keep_alive()
     bot.run(TOKEN)
+
 
 
 
