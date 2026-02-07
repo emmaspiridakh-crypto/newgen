@@ -1,5 +1,6 @@
 import os
 import discord
+import asyncio
 from discord.ext import commands
 from discord import app_commands
 from flask import Flask
@@ -125,8 +126,7 @@ class TicketCloseView(discord.ui.View):
         await interaction.response.send_message(
             "Το ticket θα κλείσει σε 2 δευτερόλεπτα...", ephemeral=True
         )
-        await discord.utils.sleep_until(discord.utils.utcnow() + discord.utils.timedelta(seconds=2))
-        try:
+       await asyncio.sleep(2)
             await interaction.channel.delete(reason="Ticket closed")
         except:
             pass
@@ -342,4 +342,5 @@ async def on_ready():
 if __name__ == "__main__":
     keep_alive()
     bot.run(TOKEN)
+
 
