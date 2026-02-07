@@ -124,9 +124,10 @@ class TicketCloseView(discord.ui.View):
     @discord.ui.button(label="Close", style=discord.ButtonStyle.danger)
     async def close_ticket(self, interaction: discord.Interaction, button: discord.ui.Button):
         await interaction.response.send_message(
-            "Το ticket θα κλείσει σε 2 δευτερόλεπτα...", ephemeral=True
+            "Το ticket θα κλείσει σε 5 δευτερόλεπτα...", ephemeral=True
         )
-       await asyncio.sleep(2)
+       await asyncio.sleep(5)
+       try:   
             await interaction.channel.delete(reason="Ticket closed")
         except:
             pass
@@ -342,5 +343,6 @@ async def on_ready():
 if __name__ == "__main__":
     keep_alive()
     bot.run(TOKEN)
+
 
 
