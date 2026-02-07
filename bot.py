@@ -5,15 +5,14 @@ from discord import app_commands
 from flask import Flask
 from threading import Thread
 
-# ==========================
+# ========================
 # CONFIG
-# ==========================
+# ========================
 
-TOKEN = "MTQ2OTY4NzY0MDQxNTUzOTI2NQ.GzXBNr.Yxs_5i0MDmZ3daAUV7vNR6itCLM09LQ0nk6XDQ"
+TOKEN = "MTQ2OTY4NzY0MDQxNTUzOTI2NQ.G4F2W_.Q6yZUzHGgHOufbJ6sZdJn6y2YDV_SSwPg2ZkO8"
+GUILD_ID = 1469054622550462720
 
-GUILD_ID = 1469054622550462720 
-
-# ROLE IDs – ΒΑΛΕ ΤΑ ΔΙΚΑ ΣΟΥ
+# ROLE IDs
 OWNER_ID = 1469054622965567594
 CO_OWNER_ID = 1469054622965567593
 DEVELOPER_ID = 1469054622957305897
@@ -22,20 +21,74 @@ STAFF_ID = 1469054622919295216
 CIVILIAN_ORG_ID = 1469054622957305900
 CRIMINAL_ORG_ID = 1469054622957305899
 
-# CATEGORY IDs – ΒΑΛΕ ΤΙΣ ΚΑΤΗΓΟΡΙΕΣ ΠΟΥ ΘΕΛΕΙΣ ΝΑ ΠΑΝΕ ΤΑ TICKETS
+# CATEGORY IDs
 MAIN_TICKET_CATEGORY_ID = 1469054624077189183
 JOB_TICKET_CATEGORY_ID = 1469698048686030931
 
-intents = discord.Intents.default()
-intents.message_content = True
-intents.members = True
+# AUTOROLE
+AUTOROLE_ID = 1469054622906847473
 
+# TEMP VOICE
+TEMP_VOICE_CATEGORY_ID = 1469054624077189184
+TEMP_VOICE_CHANNEL_ID = 1469054624077189187
+
+# ========================
+# INTENTS & BOT
+# ========================
+
+intents = discord.Intents.all()
 bot = commands.Bot(command_prefix="!", intents=intents)
 
 
-# ==========================
+# ========================
+# AUTOROLE
+# ========================
+
+@bot.event
+async def on_member_join(member):
+    role = member.guild.get_role(AUTOROLE_ID)
+    if role:
+        try:
+            await member.add_roles(role)
+        except:
+            pass
+
+
+# ========================
+# TEMP VOICE
+# ========================
+
+@bot.event
+async def on_voice_state_update(member, before, after):
+    guild = member.guild
+
+    # Join-to-create
+    if after.channel and after.channel.id == TEMP_VOICE_CHANNEL_ID:
+        category = guild.get_channel(TEMP_VOICE_CATEGORY_ID)
+
+        temp_channel = await guild.create_voice_channel(
+            name=f"{member.name}'s Channel",
+            category=category
+        )
+
+        try:
+            await member.move_to(temp_channel)
+        except:
+            pass
+
+    # Delete empty temp channels
+    if before.channel and before.channel.category_id == TEMP_VOICE_CATEGORY_ID:
+        if before.channel.id != TEMP_VOICE_CHANNEL_ID:
+            if len(before.channel.members) == 0:
+                try:
+                    await before.channel.delete()
+                except:
+                    pass
+
+
+# ========================
 # KEEP ALIVE (Render + UptimeRobot)
-# ==========================
+# ========================
 
 app = Flask('')
 
@@ -51,17 +104,17 @@ def keep_alive():
     t.start()
 
 
-# ==========================
+# ========================
 # HELPERS
-# ==========================
+# ========================
 
 def is_owner_or_coowner(user: discord.Member):
     return any(r.id in (OWNER_ID, CO_OWNER_ID) for r in user.roles)
 
 
-# ==========================
+# ========================
 # CLOSE BUTTON VIEW
-# ==========================
+# ========================
 
 class TicketCloseView(discord.ui.View):
     def __init__(self):
@@ -69,28 +122,27 @@ class TicketCloseView(discord.ui.View):
 
     @discord.ui.button(label="Close", style=discord.ButtonStyle.danger)
     async def close_ticket(self, interaction: discord.Interaction, button: discord.ui.Button):
-        # Όποιος βλέπει το κανάλι μπορεί να πατήσει close
         await interaction.response.send_message(
-            "Το ticket θα κλείσει σε 5 δευτερόλεπτα...", ephemeral=True
+            "Το ticket θα κλείσει σε 2 δευτερόλεπτα...", ephemeral=True
         )
-        await discord.utils.sleep_until(discord.utils.utcnow() + discord.utils.timedelta(seconds=5))
+        await discord.utils.sleep_until(discord.utils.utcnow() + discord.utils.timedelta(seconds=2))
         try:
             await interaction.channel.delete(reason="Ticket closed")
         except:
             pass
 
 
-# ==========================
-# PANEL 1 – Owners / Bug / Report / Support
-# ==========================
+# ============================
+# PANEL 1 - Owners / Bug / Report / Support
+# ============================
 
 class MainTicketSelect(discord.ui.Select):
     def __init__(self):
         options = [
             discord.SelectOption(label="Owner", description="Επικοινωνία με Owners / Co-Owners", emoji="👑"),
-            discord.SelectOption(label="Bug", description="Αναφορά bug", emoji="🐞"),
-            discord.SelectOption(label="Report", description="Αναφορά παίκτη / συμβάντος", emoji="📣"),
-            discord.SelectOption(label="Support", description="Γενικό support", emoji="🧰"),
+            discord.SelectOption(label="Bug", description="Αναφορά bug", emoji="🪲"),
+            discord.SelectOption(label="Report", description="Αναφορά παίκτη / συμβάντος", emoji="📙"),
+            discord.SelectOption(label="Support", description="Γενικό support", emoji="📩"),
         ]
         super().__init__(placeholder="Επίλεξε κατηγορία ticket...", min_values=1, max_values=1, options=options)
 
@@ -109,7 +161,6 @@ class MainTicketSelect(discord.ui.Select):
             author: discord.PermissionOverwrite(view_channel=True, send_messages=True, read_message_history=True),
         }
 
-        # Ρόλοι που βλέπουν ανάλογα με την επιλογή
         if self.values[0] == "Owner":
             roles_ids = [OWNER_ID, CO_OWNER_ID]
             name = f"owner-{author.name}"
@@ -119,7 +170,7 @@ class MainTicketSelect(discord.ui.Select):
         elif self.values[0] == "Report":
             roles_ids = [ORGANIZER_ID, OWNER_ID, CO_OWNER_ID]
             name = f"report-{author.name}"
-        else:  # Support
+        else:
             roles_ids = [STAFF_ID, OWNER_ID, CO_OWNER_ID]
             name = f"support-{author.name}"
 
@@ -153,17 +204,17 @@ class MainTicketPanel(discord.ui.View):
         self.add_item(MainTicketSelect())
 
 
-# ==========================
-# PANEL 2 – Civilian Job / Criminal Job
-# ==========================
+# ========================
+# PANEL 2 - Civilian Job / Criminal Job
+# ========================
 
 class JobTicketSelect(discord.ui.Select):
     def __init__(self):
         options = [
-            discord.SelectOption(label="Civilian Job", description="Civilian job", emoji="🏙️"),
-            discord.SelectOption(label="Criminal Job", description="Criminal job", emoji="💣"),
+            discord.SelectOption(label="Civilian Job", description="Civilian job", emoji="👮"),
+            discord.SelectOption(label="Criminal Job", description="Criminal job", emoji="🕵️"),
         ]
-        super().__init__(placeholder="Επίλεξε job category...", min_values=1, max_values=1, options=options)
+        super().__init__(placeholder="Επιλέξτε job category...", min_values=1, max_values=1, options=options)
 
     async def callback(self, interaction: discord.Interaction):
         guild = interaction.guild
@@ -217,9 +268,9 @@ class JobTicketPanel(discord.ui.View):
         self.add_item(JobTicketSelect())
 
 
-# ==========================
-# COMMANDS – !dmall / !say / panels
-# ==========================
+# ========================
+# COMMANDS
+# ========================
 
 @bot.command()
 async def say(ctx, *, message: str):
@@ -250,7 +301,7 @@ async def ticketpanel(ctx):
         return await ctx.reply("Δεν έχεις δικαίωμα να στείλεις το panel.")
     embed = discord.Embed(
         title="🎫 Tickets",
-        description="Επίλεξε την κατηγορία που θέλεις να ανοίξεις ticket.",
+        description="Επέλεξε την κατηγορία που θέλεις να ανοίξεις ticket.",
         color=discord.Color.green()
     )
     await ctx.send(embed=embed, view=MainTicketPanel())
@@ -262,17 +313,17 @@ async def jobpanel(ctx):
     if not is_owner_or_coowner(ctx.author):
         return await ctx.reply("Δεν έχεις δικαίωμα να στείλεις το panel.")
     embed = discord.Embed(
-        title="💼 Job Tickets",
-        description="Επίλεξε job category που θέλεις.",
+        title="📋 Job Tickets",
+        description="Επέλεξε job category που θέλεις.",
         color=discord.Color.blue()
     )
     await ctx.send(embed=embed, view=JobTicketPanel())
     await ctx.reply("Το job ticket panel στάλθηκε.", delete_after=2)
 
 
-# ==========================
+# ================================
 # EVENTS
-# ==========================
+# ================================
 
 @bot.event
 async def on_ready():
@@ -284,9 +335,9 @@ async def on_ready():
         print("Slash sync error:", e)
 
 
-# ==========================
+# ================================
 # START
-# ==========================
+# ================================
 
 if __name__ == "__main__":
     keep_alive()
