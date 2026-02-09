@@ -10,7 +10,7 @@ from threading import Thread
 # CONFIG
 # ========================
 
-TOKEN = "PUT_YOUR_TOKEN_HERE"
+TOKEN = os.getenv("TOKEN")
 GUILD_ID = 1469054622550462720
 
 # ROLE IDs
@@ -345,6 +345,7 @@ async def on_ready():
 if __name__ == "__main__":
     keep_alive()
     bot.run(TOKEN)
+
 
 
 
