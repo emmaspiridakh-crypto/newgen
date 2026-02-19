@@ -33,6 +33,10 @@ AUTOROLE_ID = 1469054622906847473
 TEMP_VOICE_CATEGORY_ID = 1469054624077189184
 TEMP_VOICE_CHANNEL_ID = 1469054624077189187
 
+# LOG CHANNEL (ΒΑΛΕ ΤΟ ΔΙΚΟ ΣΟΥ)
+LOG_CHANNEL_ID = 1474026151004340336
+
+
 # ========================
 # INTENTS & BOT
 # ========================
@@ -114,15 +118,29 @@ def is_owner_or_coowner(user: discord.Member):
 
 
 # ========================
-# CLOSE BUTTON VIEW
+# CLOSE BUTTON VIEW (ΝΕΟ + LOGS)
 # ========================
 
 class TicketCloseView(discord.ui.View):
     def __init__(self):
         super().__init__(timeout=None)
 
-    @discord.ui.button(label="Close", style=discord.ButtonStyle.danger)
+    @discord.ui.button(label="Close Ticket", style=discord.ButtonStyle.red)
     async def close_ticket(self, interaction: discord.Interaction, button: discord.ui.Button):
+
+        guild = interaction.guild
+        log_channel = guild.get_channel(LOG_CHANNEL_ID)
+
+        # LOG CLOSE
+        if log_channel:
+            embed = discord.Embed(
+                title="❌ Ticket Closed",
+                description=f"Το ticket έκλεισε από {interaction.user.mention}",
+                color=discord.Color.red()
+            )
+            embed.add_field(name="Channel", value=interaction.channel.mention)
+            await log_channel.send(embed=embed)
+
         await interaction.response.send_message(
             "Το ticket θα κλείσει σε 5 δευτερόλεπτα...", ephemeral=True
         )
@@ -133,7 +151,6 @@ class TicketCloseView(discord.ui.View):
             await interaction.channel.delete(reason="Ticket closed")
         except:
             pass
-
 
 # ============================
 # PANEL 1 - Owners / Bug / Report / Support
@@ -164,19 +181,28 @@ class MainTicketSelect(discord.ui.Select):
             author: discord.PermissionOverwrite(view_channel=True, send_messages=True, read_message_history=True),
         }
 
+        # Ticket type + roles + channel name
         if self.values[0] == "Owner":
             roles_ids = [OWNER_ID, CO_OWNER_ID]
-            name = f"owner-{author.name}"
+            name = f"owner-{author.name}".replace(" ", "-").lower()
+            ticket_type = "Owner Ticket"
+
         elif self.values[0] == "Bug":
             roles_ids = [DEVELOPER_ID, OWNER_ID, CO_OWNER_ID]
-            name = f"bug-{author.name}"
+            name = f"bug-{author.name}".replace(" ", "-").lower()
+            ticket_type = "Bug Report"
+
         elif self.values[0] == "Report":
             roles_ids = [ORGANIZER_ID, OWNER_ID, CO_OWNER_ID]
-            name = f"report-{author.name}"
+            name = f"report-{author.name}".replace(" ", "-").lower()
+            ticket_type = "Report"
+
         else:
             roles_ids = [STAFF_ID, OWNER_ID, CO_OWNER_ID]
-            name = f"support-{author.name}"
+            name = f"support-{author.name}".replace(" ", "-").lower()
+            ticket_type = "Support Ticket"
 
+        # Add staff permissions
         for rid in roles_ids:
             role = guild.get_role(rid)
             if role:
@@ -184,20 +210,40 @@ class MainTicketSelect(discord.ui.Select):
                     view_channel=True, send_messages=True, read_message_history=True
                 )
 
+        # Create ticket channel
         channel = await guild.create_text_channel(
             name=name,
             category=category,
             overwrites=overwrites,
-            reason=f"Ticket created by {author} ({self.values[0]})"
+            reason=f"Ticket created by {author} ({ticket_type})"
         )
 
-        await channel.send(
-            content=f"{author.mention} το ticket σου δημιουργήθηκε.",
-            view=TicketCloseView()
+        # EMBED MESSAGE INSIDE TICKET
+        embed = discord.Embed(
+            title=f"🎫 Ticket από {author.name}",
+            description=f"{author.mention} άνοιξε **{ticket_type}**.\n"
+                        f"Παρακαλώ περιμένετε να σας εξυπηρετήσει ένα staff.",
+            color=discord.Color.green()
         )
 
+        await channel.send(embed=embed, view=TicketCloseView())
+
+        # LOG OPEN
+        log_channel = guild.get_channel(LOG_CHANNEL_ID)
+        if log_channel:
+            log_embed = discord.Embed(
+                title="📂 Νέο Ticket",
+                description=f"Ο χρήστης {author.mention} άνοιξε ticket.",
+                color=discord.Color.blue()
+            )
+            log_embed.add_field(name="Τύπος", value=ticket_type)
+            log_embed.add_field(name="Channel", value=channel.mention)
+            await log_channel.send(embed=log_embed)
+
+        # USER RESPONSE
         await interaction.response.send_message(
-            f"Το ticket σου δημιουργήθηκε: {channel.mention}", ephemeral=True
+            f"Το ticket σου δημιουργήθηκε: {channel.mention}",
+            ephemeral=True
         )
 
 
@@ -205,7 +251,6 @@ class MainTicketPanel(discord.ui.View):
     def __init__(self):
         super().__init__(timeout=None)
         self.add_item(MainTicketSelect())
-
 
 # ========================
 # PANEL 2 - Civilian Job / Criminal Job
@@ -236,10 +281,12 @@ class JobTicketSelect(discord.ui.Select):
 
         if self.values[0] == "Civilian Job":
             roles_ids = [CIVILIAN_ORG_ID]
-            name = f"civilian-{author.name}"
+            name = f"civilian-{author.name}".replace(" ", "-").lower()
+            ticket_type = "Civilian Job"
         else:
             roles_ids = [CRIMINAL_ORG_ID]
-            name = f"criminal-{author.name}"
+            name = f"criminal-{author.name}".replace(" ", "-").lower()
+            ticket_type = "Criminal Job"
 
         for rid in roles_ids:
             role = guild.get_role(rid)
@@ -252,16 +299,35 @@ class JobTicketSelect(discord.ui.Select):
             name=name,
             category=category,
             overwrites=overwrites,
-            reason=f"Job ticket created by {author} ({self.values[0]})"
+            reason=f"Job ticket created by {author} ({ticket_type})"
         )
 
-        await channel.send(
-            content=f"{author.mention} το job ticket σου δημιουργήθηκε.",
-            view=TicketCloseView()
+        # EMBED MESSAGE INSIDE TICKET
+        embed = discord.Embed(
+            title=f"🎫 Ticket από {author.name}",
+            description=f"{author.mention} άνοιξε **{ticket_type}**.\n"
+                        f"Παρακαλώ περιμένετε να σας εξυπηρετήσει ένας Organizer.",
+            color=discord.Color.green()
         )
 
+        await channel.send(embed=embed, view=TicketCloseView())
+
+        # LOG OPEN
+        log_channel = guild.get_channel(LOG_CHANNEL_ID)
+        if log_channel:
+            log_embed = discord.Embed(
+                title="📂 Νέο Ticket",
+                description=f"Ο χρήστης {author.mention} άνοιξε ticket.",
+                color=discord.Color.blue()
+            )
+            log_embed.add_field(name="Τύπος", value=ticket_type)
+            log_embed.add_field(name="Channel", value=channel.mention)
+            await log_channel.send(embed=log_embed)
+
+        # USER RESPONSE
         await interaction.response.send_message(
-            f"Το job ticket σου δημιουργήθηκε: {channel.mention}", ephemeral=True
+            f"Το job ticket σου δημιουργήθηκε: {channel.mention}",
+            ephemeral=True
         )
 
 
@@ -345,11 +411,6 @@ async def on_ready():
 if __name__ == "__main__":
     keep_alive()
     bot.run(TOKEN)
-
-
-
-
-
 
 
 
