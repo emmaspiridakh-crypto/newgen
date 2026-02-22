@@ -33,9 +33,24 @@ AUTOROLE_ID = 1469054622906847473
 TEMP_VOICE_CATEGORY_ID = 1469054624077189184
 TEMP_VOICE_CHANNEL_ID = 1469054624077189187
 
-# LOG CHANNEL (ΒΑΛΕ ΤΟ ΔΙΚΟ ΣΟΥ)
+# LOG CHANNEL (γενικό)
 LOG_CHANNEL_ID = 1474026151004340336
 
+# ========================
+# WHITELIST CONFIG
+# ========================
+
+WHITELIST_MANAGER_ROLE_ID = 1475213972406931456        # ΒΑΛΕ ΤΟ ID ΤΟΥ WHITELIST MANAGER
+WHITELISTED_ROLE_ID = 1475212206864990239              # ΒΑΛΕ ΤΟ ID ΤΟΥ WHITELISTED ROLE
+WHITELIST_REVIEW_CHANNEL_ID = 1475215846396661902      # ΚΑΝΑΛΙ ΠΟΥ ΒΛΕΠΟΥΝ OWNER/CO-OWNER/WH-MANAGER
+WHITELIST_LOG_CHANNEL_ID = 1475212168680177674         # LOGS ΓΙΑ ACCEPT/DENY (ΜΠΟΡΕΙ ΝΑ ΕΙΝΑΙ ΤΟ ΙΔΙΟ ΜΕ ΤΟ REVIEW)
+
+# Cooldown storage (user_id -> timestamp)
+whitelist_cooldown = {}
+WHITELIST_COOLDOWN_SECONDS = 86400  # 24 ώρες
+
+# Αποθήκευση applications (review_message_id -> data)
+whitelist_applications = {}
 
 # ========================
 # INTENTS & BOT
@@ -43,7 +58,6 @@ LOG_CHANNEL_ID = 1474026151004340336
 
 intents = discord.Intents.all()
 bot = commands.Bot(command_prefix="!", intents=intents)
-
 
 # ========================
 # AUTOROLE
@@ -57,7 +71,6 @@ async def on_member_join(member):
             await member.add_roles(role)
         except:
             pass
-
 
 # ========================
 # TEMP VOICE
@@ -90,7 +103,6 @@ async def on_voice_state_update(member, before, after):
                 except:
                     pass
 
-
 # ========================
 # KEEP ALIVE (Render + UptimeRobot)
 # ========================
@@ -108,7 +120,6 @@ def keep_alive():
     t = Thread(target=run)
     t.start()
 
-
 # ========================
 # HELPERS
 # ========================
@@ -116,6 +127,9 @@ def keep_alive():
 def is_owner_or_coowner(user: discord.Member):
     return any(r.id in (OWNER_ID, CO_OWNER_ID) for r in user.roles)
 
+def has_whitelist_permission(member: discord.Member):
+    role_ids = [OWNER_ID, CO_OWNER_ID, WHITELIST_MANAGER_ROLE_ID]
+    return any(r.id in role_ids for r in member.roles)
 
 # ========================
 # CLOSE BUTTON VIEW (ΝΕΟ + LOGS)
@@ -246,7 +260,6 @@ class MainTicketSelect(discord.ui.Select):
             ephemeral=True
         )
 
-
 class MainTicketPanel(discord.ui.View):
     def __init__(self):
         super().__init__(timeout=None)
@@ -330,12 +343,226 @@ class JobTicketSelect(discord.ui.Select):
             ephemeral=True
         )
 
-
 class JobTicketPanel(discord.ui.View):
     def __init__(self):
         super().__init__(timeout=None)
         self.add_item(JobTicketSelect())
 
+# ========================
+# WHITELIST SYSTEM
+# ========================
+
+class WhitelistReviewView(discord.ui.View):
+    def __init__(self):
+        super().__init__(timeout=None)
+
+    @discord.ui.button(label="Approve", style=discord.ButtonStyle.green)
+    async def approve(self, interaction: discord.Interaction, button: discord.ui.Button):
+        if not has_whitelist_permission(interaction.user):
+            return await interaction.response.send_message(
+                "Δεν έχεις δικαίωμα να διαχειριστείς whitelist.", ephemeral=True
+            )
+
+        await interaction.response.send_message(
+            "Γράψε το reason για **ACCEPT** σε ένα μήνυμα σε αυτό το κανάλι.", ephemeral=True
+        )
+
+        def check(m):
+            return m.author == interaction.user and m.channel == interaction.channel
+
+        try:
+            msg = await bot.wait_for("message", check=check, timeout=300)
+        except asyncio.TimeoutError:
+            return
+
+        reason = msg.content
+        await handle_whitelist_decision(interaction, approved=True, reason=reason)
+
+    @discord.ui.button(label="Deny", style=discord.ButtonStyle.danger)
+    async def deny(self, interaction: discord.Interaction, button: discord.ui.Button):
+        if not has_whitelist_permission(interaction.user):
+            return await interaction.response.send_message(
+                "Δεν έχεις δικαίωμα να διαχειριστείς whitelist.", ephemeral=True
+            )
+
+        await interaction.response.send_message(
+            "Γράψε το reason για **DENY** σε ένα μήνυμα σε αυτό το κανάλι.", ephemeral=True
+        )
+
+        def check(m):
+            return m.author == interaction.user and m.channel == interaction.channel
+
+        try:
+            msg = await bot.wait_for("message", check=check, timeout=300)
+        except asyncio.TimeoutError:
+            return
+
+        reason = msg.content
+        await handle_whitelist_decision(interaction, approved=False, reason=reason)
+
+async def handle_whitelist_decision(interaction: discord.Interaction, approved: bool, reason: str):
+    guild = interaction.guild
+    review_message = interaction.message
+    data = whitelist_applications.get(review_message.id)
+
+    if not data:
+        return await interaction.followup.send("Δεν βρέθηκαν δεδομένα για αυτή την αίτηση.", ephemeral=True)
+
+    user_id = data["user_id"]
+    ticket_channel_id = data["ticket_channel_id"]
+
+    member = guild.get_member(user_id)
+    ticket_channel = guild.get_channel(ticket_channel_id)
+    log_channel = guild.get_channel(WHITELIST_LOG_CHANNEL_ID) or guild.get_channel(LOG_CHANNEL_ID)
+
+    # DM στον χρήστη
+    if member:
+        try:
+            if approved:
+                dm_text = f"✅ Η whitelist αίτησή σου **έγινε δεκτή** από {interaction.user.mention}.\nReason: {reason}"
+            else:
+                dm_text = f"❌ Η whitelist αίτησή σου **απορρίφθηκε** από {interaction.user.mention}.\nReason: {reason}"
+            await member.send(dm_text)
+        except:
+            pass
+
+    # Role add αν είναι approved
+    if approved and member:
+        wl_role = guild.get_role(WHITELISTED_ROLE_ID)
+        if wl_role:
+            try:
+                await member.add_roles(wl_role, reason="Whitelist approved")
+            except:
+                pass
+
+    # Logs
+    if log_channel:
+        status = "APPROVED" if approved else "DENIED"
+        color = discord.Color.green() if approved else discord.Color.red()
+        embed = discord.Embed(
+            title=f"Whitelist {status}",
+            color=color
+        )
+        if member:
+            embed.add_field(name="User", value=f"{member.mention} ({member.id})", inline=False)
+        embed.add_field(name="Staff", value=f"{interaction.user.mention} ({interaction.user.id})", inline=False)
+        embed.add_field(name="Reason", value=reason or "No reason provided", inline=False)
+        if ticket_channel:
+            embed.add_field(name="Ticket Channel", value=ticket_channel.mention, inline=False)
+        await log_channel.send(embed=embed)
+
+    # Κλείσιμο ticket
+    if ticket_channel:
+        try:
+            await ticket_channel.delete(reason="Whitelist application processed")
+        except:
+            pass
+
+    # Ενημέρωση review message
+    try:
+        status_text = "✅ ACCEPTED" if approved else "❌ DENIED"
+        new_embed = review_message.embeds[0] if review_message.embeds else discord.Embed()
+        new_embed.add_field(name="Status", value=status_text, inline=False)
+        new_embed.add_field(name="Handled by", value=interaction.user.mention, inline=False)
+        await review_message.edit(embed=new_embed, view=None)
+    except:
+        pass
+
+    await interaction.followup.send(
+        f"Η αίτηση {'εγκρίθηκε' if approved else 'απορρίφθηκε'} επιτυχώς.", ephemeral=True
+    )
+
+class WhitelistApplyButton(discord.ui.View):
+    def __init__(self):
+        super().__init__(timeout=None)
+
+    @discord.ui.button(label="Apply for Whitelist", style=discord.ButtonStyle.green)
+    async def apply(self, interaction: discord.Interaction, button: discord.ui.Button):
+
+        user = interaction.user
+        now = asyncio.get_event_loop().time()
+
+        # Cooldown check
+        if user.id in whitelist_cooldown:
+            remaining = whitelist_cooldown[user.id] - now
+            if remaining > 0:
+                hours = int(remaining // 3600)
+                minutes = int((remaining % 3600) // 60)
+                return await interaction.response.send_message(
+                    f"Μπορείς να ξανακάνεις αίτηση σε **{hours} ώρες και {minutes} λεπτά**.",
+                    ephemeral=True
+                )
+
+        guild = interaction.guild
+        category = guild.get_channel(MAIN_TICKET_CATEGORY_ID)
+
+        if category is None or not isinstance(category, discord.CategoryChannel):
+            return await interaction.response.send_message(
+                "Η κατηγορία για whitelist applications δεν βρέθηκε.", ephemeral=True
+            )
+
+        overwrites = {
+            guild.default_role: discord.PermissionOverwrite(view_channel=False),
+            user: discord.PermissionOverwrite(view_channel=True, send_messages=True, read_message_history=True),
+        }
+
+        channel = await guild.create_text_channel(
+            name=f"application-{user.name}".replace(" ", "-").lower(),
+            category=category,
+            overwrites=overwrites,
+            reason=f"Whitelist application by {user}"
+        )
+
+        # Αποθήκευση cooldown
+        whitelist_cooldown[user.id] = now + WHITELIST_COOLDOWN_SECONDS
+
+        # Ερωτήσεις (αλλάζεις εσύ)
+        questions = (
+            "**1. Πόσο χρονών είσαι;**\n"
+            "**2. Πώς σε λένε στο Rolbox;**\n"
+            "**3. Έχεις εμπειρία σε RP;**\n"
+            "**4. Τι είναι το RDM;**\n"
+            "**5. Πες μας 3 βασικά rules για εσένα**\n"
+            "**6. Με ποιό κομμάτι του RP θες να ασχοληθεις;**\n"
+            "**7. Πες μας το backstory του χαρακτήρα σου.**\n"
+            "**8. Τι θα κάνεις αν κάποιος παίχτης κάνει επανειλημμένα failRP;**\n"
+        )
+
+        embed = discord.Embed(
+            title="📋 Whitelist Application",
+            description=f"{user.mention}, απάντησε στις παρακάτω ερωτήσεις:\n\n{questions}",
+            color=discord.Color.green()
+        )
+
+        await channel.send(embed=embed, view=TicketCloseView())
+
+        # Στέλνουμε στο review channel για Owner/Co-Owner/Whitelist Manager
+        review_channel = guild.get_channel(WHITELIST_REVIEW_CHANNEL_ID)
+        if review_channel:
+            review_embed = discord.Embed(
+                title="📝 Νέα Whitelist Αίτηση",
+                description=f"Αίτηση από {user.mention} ({user.id})",
+                color=discord.Color.blue()
+            )
+            review_embed.add_field(name="Ticket Channel", value=channel.mention, inline=False)
+            review_embed.add_field(
+                name="Οδηγία",
+                value="Διαβάστε τις απαντήσεις στο ticket channel και πατήστε **Approve** ή **Deny**.",
+                inline=False
+            )
+
+            review_msg = await review_channel.send(embed=review_embed, view=WhitelistReviewView())
+
+            # Αποθήκευση δεδομένων
+            whitelist_applications[review_msg.id] = {
+                "user_id": user.id,
+                "ticket_channel_id": channel.id
+            }
+
+        await interaction.response.send_message(
+            f"Το whitelist application σου δημιουργήθηκε: {channel.mention}",
+            ephemeral=True
+        )
 
 # ========================
 # COMMANDS
@@ -346,7 +573,6 @@ async def say(ctx, *, message: str):
     if not is_owner_or_coowner(ctx.author):
         return await ctx.reply("Δεν έχεις δικαίωμα να χρησιμοποιήσεις αυτή την εντολή.")
     await ctx.send(message)
-
 
 @bot.command()
 async def dmall(ctx, *, message: str):
@@ -363,7 +589,6 @@ async def dmall(ctx, *, message: str):
             continue
     await ctx.reply(f"Το μήνυμα στάλθηκε σε {sent} μέλη.")
 
-
 @bot.command()
 async def ticketpanel(ctx):
     if not is_owner_or_coowner(ctx.author):
@@ -375,7 +600,6 @@ async def ticketpanel(ctx):
     )
     await ctx.send(embed=embed, view=MainTicketPanel())
     await ctx.reply("Το main ticket panel στάλθηκε.", delete_after=2)
-
 
 @bot.command()
 async def jobpanel(ctx):
@@ -389,6 +613,17 @@ async def jobpanel(ctx):
     await ctx.send(embed=embed, view=JobTicketPanel())
     await ctx.reply("Το job ticket panel στάλθηκε.", delete_after=2)
 
+@bot.command()
+async def whitelistpanel(ctx):
+    if not is_owner_or_coowner(ctx.author):
+        return await ctx.reply("Δεν έχεις δικαίωμα να στείλεις το panel.")
+    embed = discord.Embed(
+        title="📋 Whitelist Application",
+        description="Πάτησε το κουμπί για να κάνεις αίτηση whitelist.",
+        color=discord.Color.green()
+    )
+    await ctx.send(embed=embed, view=WhitelistApplyButton())
+    await ctx.reply("Το whitelist panel στάλθηκε.", delete_after=2)
 
 # ================================
 # EVENTS
@@ -403,7 +638,6 @@ async def on_ready():
     except Exception as e:
         print("Slash sync error:", e)
 
-
 # ================================
 # START
 # ================================
@@ -411,6 +645,4 @@ async def on_ready():
 if __name__ == "__main__":
     keep_alive()
     bot.run(TOKEN)
-
-
 
