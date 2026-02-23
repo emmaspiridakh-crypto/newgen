@@ -7,6 +7,5 @@ services:
     dockerfilePath: Dockerfile
     healthCheckPath: "/"
     healthCheckTimeout: 1000
-    envVars:
-      - key: TOKEN
-        sync: false
+    healthCheckInterval: 1000
+    healthCheckMethod: "GET"
