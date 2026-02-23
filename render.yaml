@@ -5,6 +5,8 @@ services:
     plan: free
     autoDeploy: true
     dockerfilePath: Dockerfile
-    startCommand: "python bot.py"
     healthCheckPath: "/"
-    numInstances: 1
+    healthCheckTimeout: 1000
+    envVars:
+      - key: TOKEN
+        sync: false
