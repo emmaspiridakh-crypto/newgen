@@ -86,6 +86,17 @@ intents = discord.Intents.all()
 bot = commands.Bot(command_prefix="!", intents=intents)
 
 # ========================
+# HELPERS
+# ========================
+
+def is_owner_or_coowner(user: discord.Member):
+    return any(r.id in (OWNER_ID, CO_OWNER_ID) for r in user.roles)
+
+def has_whitelist_permission(member: discord.Member):
+    role_ids = [OWNER_ID, CO_OWNER_ID, WHITELIST_MANAGER_ROLE_ID]
+    return any(r.id in role_ids for r in member.roles)
+
+# ========================
 # LOGGING EVENTS
 # ========================
 
@@ -863,5 +874,6 @@ def keep_alive():
 if __name__ == "__main__":
     keep_alive()
     bot.run(TOKEN)
+
 
 
