@@ -97,13 +97,28 @@ def has_whitelist_permission(member: discord.Member):
     return any(r.id in role_ids for r in member.roles)
 
 # ========================
-# LOGGING EVENTS
+# LOGGING EVENTS (FIXED)
 # ========================
 
 @bot.event
 async def on_message_edit(before, after):
+    # Ignore bot messages
     if before.author.bot:
         return
+
+    # Ignore system messages
+    if before.type != discord.MessageType.default:
+        return
+
+    # Ignore interaction responses
+    if hasattr(before, "interaction") and before.interaction is not None:
+        return
+
+    # Ignore embed-only edits
+    if not before.content and before.embeds:
+        return
+
+    # Ignore no-change edits
     if before.content == after.content:
         return
 
@@ -119,25 +134,25 @@ async def on_message_edit(before, after):
         embed.add_field(name="After", value=after.content or "None", inline=False)
         await channel.send(embed=embed)
 
+
 @bot.event
 async def on_message_delete(message):
-    # Αγνόησε bot messages
+    # Ignore bot messages
     if message.author.bot:
         return
 
-    # Αγνόησε system messages (boosts, pins, joins, etc.)
+    # Ignore system messages
     if message.type != discord.MessageType.default:
         return
 
-    # Αγνόησε interaction responses (slash commands, buttons, views)
+    # Ignore interaction responses
     if hasattr(message, "interaction") and message.interaction is not None:
         return
 
-    # Αγνόησε embed-only messages (π.χ. bot embeds χωρίς text)
+    # Ignore embed-only deletes
     if not message.content and message.embeds:
         return
 
-    # Τώρα κάνε log ΜΟΝΟ τα κανονικά user messages
     channel = bot.get_channel(MESSAGE_DELETE_LOG_CHANNEL_ID)
     if channel:
         embed = discord.Embed(
@@ -197,38 +212,41 @@ async def on_member_remove(member):
 
 @bot.event
 async def on_member_update(before, after):
-    if before.roles != after.roles:
-        channel = bot.get_channel(ROLE_UPDATE_LOG_CHANNEL_ID)
-        if channel:
-            embed = discord.Embed(
-                title="🎭 Role Update",
-                color=discord.Color.blue()
-            )
-            embed.add_field(name="User", value=f"{after} ({after.id})", inline=False)
+    # Avoid duplicate triggers
+    if before.roles == after.roles:
+        return
 
-            before_set = set(before.roles)
-            after_set = set(after.roles)
+    channel = bot.get_channel(ROLE_UPDATE_LOG_CHANNEL_ID)
+    if channel:
+        embed = discord.Embed(
+            title="🎭 Role Update",
+            color=discord.Color.blue()
+        )
+        embed.add_field(name="User", value=f"{after} ({after.id})", inline=False)
 
-            added = after_set - before_set
-            removed = before_set - after_set
+        before_set = set(before.roles)
+        after_set = set(after.roles)
 
-            if added:
-                embed.add_field(name="Added Roles", value=", ".join([r.mention for r in added]), inline=False)
-            if removed:
-                embed.add_field(name="Removed Roles", value=", ".join([r.mention for r in removed]), inline=False)
+        added = after_set - before_set
+        removed = before_set - after_set
 
-            await channel.send(embed=embed)
+        if added:
+            embed.add_field(name="Added Roles", value=", ".join([r.mention for r in added]), inline=False)
+        if removed:
+            embed.add_field(name="Removed Roles", value=", ".join([r.mention for r in removed]), inline=False)
+
+        await channel.send(embed=embed)
 
 
 # ========================
-# VOICE LOGS
+# VOICE LOGS (FIXED)
 # ========================
 
 @bot.event
 async def on_voice_state_update(member, before, after):
-    # TEMP VOICE (your existing system)
     guild = member.guild
 
+    # TEMP VOICE SYSTEM
     if after.channel and after.channel.id == TEMP_VOICE_CHANNEL_ID:
         category = guild.get_channel(TEMP_VOICE_CATEGORY_ID)
         temp_channel = await guild.create_voice_channel(
@@ -248,22 +266,24 @@ async def on_voice_state_update(member, before, after):
                 except:
                     pass
 
-    # VOICE LOGGING
+    # VOICE LOGGING (avoid duplicates)
+    if before.channel == after.channel:
+        return
+
     channel = bot.get_channel(VOICE_LOG_CHANNEL_ID)
     if channel:
-        if before.channel != after.channel:
-            embed = discord.Embed(
-                title="🎧 Voice Activity",
-                color=discord.Color.purple()
-            )
-            embed.add_field(name="User", value=f"{member} ({member.id})", inline=False)
-            embed.add_field(name="Before", value=str(before.channel), inline=False)
-            embed.add_field(name="After", value=str(after.channel), inline=False)
-            await channel.send(embed=embed)
+        embed = discord.Embed(
+            title="🎧 Voice Activity",
+            color=discord.Color.purple()
+        )
+        embed.add_field(name="User", value=f"{member} ({member.id})", inline=False)
+        embed.add_field(name="Before", value=str(before.channel), inline=False)
+        embed.add_field(name="After", value=str(after.channel), inline=False)
+        await channel.send(embed=embed)
 
 
 # ========================
-# CHANNEL CREATE / DELETE
+# CHANNEL CREATE / DELETE (FIXED)
 # ========================
 
 @bot.event
@@ -276,7 +296,6 @@ async def on_guild_channel_create(channel):
         )
         embed.add_field(name="Name", value=channel.name, inline=False)
         embed.add_field(name="Type", value=str(channel.type), inline=False)
-        embed.add_field(name="User", value=f"{member} ({member.id})", inline=False)
         await log.send(embed=embed)
 
 
@@ -290,12 +309,11 @@ async def on_guild_channel_delete(channel):
         )
         embed.add_field(name="Name", value=channel.name, inline=False)
         embed.add_field(name="Type", value=str(channel.type), inline=False)
-        embed.add_field(name="User", value=f"{member} ({member.id})", inline=False)
         await log.send(embed=embed)
 
 
 # ========================
-# ROLE CREATE / DELETE
+# ROLE CREATE / DELETE (FIXED)
 # ========================
 
 @bot.event
@@ -307,7 +325,6 @@ async def on_guild_role_create(role):
             color=discord.Color.green()
         )
         embed.add_field(name="Role", value=role.mention, inline=False)
-        embed.add_field(name="User", value=f"{member} ({member.id})", inline=False)
         await log.send(embed=embed)
 
 
@@ -320,43 +337,8 @@ async def on_guild_role_delete(role):
             color=discord.Color.red()
         )
         embed.add_field(name="Role Name", value=role.name, inline=False)
-        embed.add_field(name="User", value=f"{member} ({member.id})", inline=False)
         await log.send(embed=embed)
 
-
-# ========================
-# ANTI-ALT DETECTION
-# ========================
-
-async def anti_alt_check(member):
-    channel = bot.get_channel(ALT_ALERT_CHANNEL_ID)
-    if not channel:
-        return
-
-    reasons = []
-
-    # Account age check
-    account_age_days = (discord.utils.utcnow() - member.created_at).days
-    if account_age_days < ALT_MIN_ACCOUNT_AGE_DAYS:
-        reasons.append(f"• Account age: {account_age_days} days")
-
-    # PFP check
-    if ALT_REQUIRE_PFP and not member.avatar:
-        reasons.append("• No profile picture")
-
-    # Suspicious username
-    if ALT_SUSPICIOUS_NAME:
-        if any(char.isdigit() for char in member.name) and len(member.name) < 5:
-            reasons.append("• Suspicious username pattern")
-
-    if reasons:
-        embed = discord.Embed(
-            title="⚠️ Possible ALT Detected",
-            color=discord.Color.red()
-        )
-        embed.add_field(name="User", value=f"{member} ({member.id})", inline=False)
-        embed.add_field(name="Reasons", value="\n".join(reasons), inline=False)
-        await channel.send(embed=embed)
 
 # ========================
 # CLOSE BUTTON VIEW (ΝΕΟ + LOGS)
@@ -887,6 +869,7 @@ def keep_alive():
 if __name__ == "__main__":
     keep_alive()
     bot.run(TOKEN)
+
 
 
 
