@@ -3,8 +3,6 @@ import discord
 import asyncio
 from discord.ext import commands
 from discord import app_commands
-from flask import Flask
-from threading import Thread
 
 # ========================
 # CONFIG
@@ -33,46 +31,20 @@ AUTOROLE_ID = 1469054622906847473
 TEMP_VOICE_CATEGORY_ID = 1469054624077189184
 TEMP_VOICE_CHANNEL_ID = 1469054624077189187
 
-# LOG CHANNEL (γενικό)
+# LOG CHANNELS
 LOG_CHANNEL_ID = 1474026151004340336
-
-# ========================
-# WHITELIST CONFIG
-# ========================
-
-WHITELIST_MANAGER_ROLE_ID = 1475213972406931456
-WHITELISTED_ROLE_ID = 1475212206864990239
-WHITELIST_REVIEW_CHANNEL_ID = 1475215846396661902
-WHITELIST_LOG_CHANNEL_ID = 1475212168680177674
-
-whitelist_cooldown = {}
-WHITELIST_COOLDOWN_SECONDS = 86400
-whitelist_applications = {}
-
-# ========================
-# EXTRA LOGGING CONFIG
-# ========================
-
 MESSAGE_EDIT_LOG_CHANNEL_ID = 1475520124894052465
 MESSAGE_DELETE_LOG_CHANNEL_ID = 1475520124894052465
-
 MEMBER_JOIN_LOG_CHANNEL_ID = 1475519852163895552
 MEMBER_LEAVE_LOG_CHANNEL_ID = 1475519852163895552
-
 ROLE_UPDATE_LOG_CHANNEL_ID = 1475520225792364716
-
 VOICE_LOG_CHANNEL_ID = 1475520000461766726
-
 CHANNEL_CREATE_LOG_CHANNEL_ID = 1475526632193396796
 CHANNEL_DELETE_LOG_CHANNEL_ID = 1475526632193396796
-
 ROLE_CREATE_LOG_CHANNEL_ID = 1475520225792364716
 ROLE_DELETE_LOG_CHANNEL_ID = 1475520225792364716
 
-# ========================
 # ANTI-ALT CONFIG
-# ========================
-
 ALT_ALERT_CHANNEL_ID = 1475521422980939980
 ALT_MIN_ACCOUNT_AGE_DAYS = 10
 ALT_REQUIRE_PFP = True
@@ -102,23 +74,14 @@ def has_whitelist_permission(member: discord.Member):
 
 @bot.event
 async def on_message_edit(before, after):
-    # Ignore bot messages
     if before.author.bot:
         return
-
-    # Ignore system messages
     if before.type != discord.MessageType.default:
         return
-
-    # Ignore interaction responses
     if hasattr(before, "interaction") and before.interaction is not None:
         return
-
-    # Ignore embed-only edits
     if not before.content and before.embeds:
         return
-
-    # Ignore no-change edits
     if before.content == after.content:
         return
 
@@ -137,19 +100,12 @@ async def on_message_edit(before, after):
 
 @bot.event
 async def on_message_delete(message):
-    # Ignore bot messages
     if message.author.bot:
         return
-
-    # Ignore system messages
     if message.type != discord.MessageType.default:
         return
-
-    # Ignore interaction responses
     if hasattr(message, "interaction") and message.interaction is not None:
         return
-
-    # Ignore embed-only deletes
     if not message.content and message.embeds:
         return
 
@@ -163,7 +119,6 @@ async def on_message_delete(message):
         embed.add_field(name="Channel", value=message.channel.mention, inline=False)
         embed.add_field(name="Content", value=message.content or "None", inline=False)
         await channel.send(embed=embed)
-
 
 # ========================
 # MEMBER JOIN / LEAVE
@@ -283,7 +238,7 @@ async def on_voice_state_update(member, before, after):
 
 
 # ========================
-# CHANNEL CREATE / DELETE (FIXED)
+# CHANNEL CREATE / DELETE
 # ========================
 
 @bot.event
@@ -313,7 +268,7 @@ async def on_guild_channel_delete(channel):
 
 
 # ========================
-# ROLE CREATE / DELETE (FIXED)
+# ROLE CREATE / DELETE
 # ========================
 
 @bot.event
@@ -339,9 +294,8 @@ async def on_guild_role_delete(role):
         embed.add_field(name="Role Name", value=role.name, inline=False)
         await log.send(embed=embed)
 
-
 # ========================
-# CLOSE BUTTON VIEW (ΝΕΟ + LOGS)
+# CLOSE BUTTON VIEW
 # ========================
 
 class TicketCloseView(discord.ui.View):
@@ -374,6 +328,7 @@ class TicketCloseView(discord.ui.View):
             await interaction.channel.delete(reason="Ticket closed")
         except:
             pass
+
 
 # ============================
 # PANEL 1 - Owners / Bug / Report / Support
@@ -469,6 +424,7 @@ class MainTicketSelect(discord.ui.Select):
             ephemeral=True
         )
 
+
 class MainTicketPanel(discord.ui.View):
     def __init__(self):
         super().__init__(timeout=None)
@@ -551,6 +507,7 @@ class JobTicketSelect(discord.ui.Select):
             f"Το job ticket σου δημιουργήθηκε: {channel.mention}",
             ephemeral=True
         )
+
 
 class JobTicketPanel(discord.ui.View):
     def __init__(self):
@@ -785,6 +742,7 @@ async def say(ctx, *, message: str):
         return await ctx.reply("Δεν έχεις δικαίωμα να χρησιμοποιήσεις αυτή την εντολή.")
     await ctx.send(message)
 
+
 @bot.command()
 async def dmall(ctx, *, message: str):
     if not is_owner_or_coowner(ctx.author):
@@ -800,6 +758,7 @@ async def dmall(ctx, *, message: str):
             continue
     await ctx.reply(f"Το μήνυμα στάλθηκε σε {sent} μέλη.")
 
+
 @bot.command()
 async def ticketpanel(ctx):
     if not is_owner_or_coowner(ctx.author):
@@ -811,6 +770,7 @@ async def ticketpanel(ctx):
     )
     await ctx.send(embed=embed, view=MainTicketPanel())
     await ctx.reply("Το main ticket panel στάλθηκε.", delete_after=2)
+
 
 @bot.command()
 async def jobpanel(ctx):
@@ -824,6 +784,7 @@ async def jobpanel(ctx):
     await ctx.send(embed=embed, view=JobTicketPanel())
     await ctx.reply("Το job ticket panel στάλθηκε.", delete_after=2)
 
+
 @bot.command()
 async def whitelistpanel(ctx):
     if not is_owner_or_coowner(ctx.author):
@@ -835,6 +796,7 @@ async def whitelistpanel(ctx):
     )
     await ctx.send(embed=embed, view=WhitelistApplyButton())
     await ctx.reply("Το whitelist panel στάλθηκε.", delete_after=2)
+
 
 # ================================
 # EVENTS
@@ -849,28 +811,10 @@ async def on_ready():
     except Exception as e:
         print("Slash sync error:", e)
 
+
 # ================================
-# START
+# START (NO FLASK, NO KEEP_ALIVE)
 # ================================
-
-app = Flask('')
-
-@app.route('/')
-def home():
-    return "Bot is alive!"
-
-def run():
-    app.run(host='0.0.0.0', port=8080)
-
-def keep_alive():
-    t = Thread(target=run)
-    t.start()
 
 if __name__ == "__main__":
-    keep_alive()
     bot.run(TOKEN)
-
-
-
-
-
