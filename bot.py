@@ -9,6 +9,15 @@ from discord import app_commands
 # ========================
 
 TOKEN = os.getenv("TOKEN")
+
+# ========================
+# INTENTS & BOT
+# ========================
+
+intents = discord.Intents.all()
+bot = commands.Bot(command_prefix="!", intents=intents)
+
+
 GUILD_ID = 1469054622550462720
 
 # ROLE IDs
@@ -49,13 +58,6 @@ ALT_ALERT_CHANNEL_ID = 1475521422980939980
 ALT_MIN_ACCOUNT_AGE_DAYS = 10
 ALT_REQUIRE_PFP = True
 ALT_SUSPICIOUS_NAME = True
-
-# ========================
-# INTENTS & BOT
-# ========================
-
-intents = discord.Intents.all()
-bot = commands.Bot(command_prefix="!", intents=intents)
 
 # ========================
 # HELPERS
@@ -818,3 +820,4 @@ async def on_ready():
 
 if __name__ == "__main__":
     bot.run(TOKEN)
+
