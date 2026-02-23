@@ -40,17 +40,43 @@ LOG_CHANNEL_ID = 1474026151004340336
 # WHITELIST CONFIG
 # ========================
 
-WHITELIST_MANAGER_ROLE_ID = 1475213972406931456        # ΒΑΛΕ ΤΟ ID ΤΟΥ WHITELIST MANAGER
-WHITELISTED_ROLE_ID = 1475212206864990239              # ΒΑΛΕ ΤΟ ID ΤΟΥ WHITELISTED ROLE
-WHITELIST_REVIEW_CHANNEL_ID = 1475215846396661902      # ΚΑΝΑΛΙ ΠΟΥ ΒΛΕΠΟΥΝ OWNER/CO-OWNER/WH-MANAGER
-WHITELIST_LOG_CHANNEL_ID = 1475212168680177674         # LOGS ΓΙΑ ACCEPT/DENY (ΜΠΟΡΕΙ ΝΑ ΕΙΝΑΙ ΤΟ ΙΔΙΟ ΜΕ ΤΟ REVIEW)
+WHITELIST_MANAGER_ROLE_ID = 1475213972406931456
+WHITELISTED_ROLE_ID = 1475212206864990239
+WHITELIST_REVIEW_CHANNEL_ID = 1475215846396661902
+WHITELIST_LOG_CHANNEL_ID = 1475212168680177674
 
-# Cooldown storage (user_id -> timestamp)
 whitelist_cooldown = {}
-WHITELIST_COOLDOWN_SECONDS = 86400  # 24 ώρες
-
-# Αποθήκευση applications (review_message_id -> data)
+WHITELIST_COOLDOWN_SECONDS = 86400
 whitelist_applications = {}
+
+# ========================
+# EXTRA LOGGING CONFIG
+# ========================
+
+MESSAGE_EDIT_LOG_CHANNEL_ID = 1475520124894052465
+MESSAGE_DELETE_LOG_CHANNEL_ID = 1475520124894052465
+
+MEMBER_JOIN_LOG_CHANNEL_ID = 1475519852163895552
+MEMBER_LEAVE_LOG_CHANNEL_ID = 1475519852163895552
+
+ROLE_UPDATE_LOG_CHANNEL_ID = 1475520225792364716
+
+VOICE_LOG_CHANNEL_ID = 1475520000461766726
+
+CHANNEL_CREATE_LOG_CHANNEL_ID = 1475526632193396796
+CHANNEL_DELETE_LOG_CHANNEL_ID = 1475526632193396796
+
+ROLE_CREATE_LOG_CHANNEL_ID = 1475520225792364716
+ROLE_DELETE_LOG_CHANNEL_ID = 1475520225792364716
+
+# ========================
+# ANTI-ALT CONFIG
+# ========================
+
+ALT_ALERT_CHANNEL_ID = 1475521422980939980
+ALT_MIN_ACCOUNT_AGE_DAYS = 10
+ALT_REQUIRE_PFP = True
+ALT_SUSPICIOUS_NAME = True
 
 # ========================
 # INTENTS & BOT
@@ -60,11 +86,53 @@ intents = discord.Intents.all()
 bot = commands.Bot(command_prefix="!", intents=intents)
 
 # ========================
-# AUTOROLE
+# LOGGING EVENTS
+# ========================
+
+@bot.event
+async def on_message_edit(before, after):
+    if before.author.bot:
+        return
+    if before.content == after.content:
+        return
+
+    channel = bot.get_channel(MESSAGE_EDIT_LOG_CHANNEL_ID)
+    if channel:
+        embed = discord.Embed(
+            title="✏️ Message Edited",
+            color=discord.Color.orange()
+        )
+        embed.add_field(name="User", value=f"{before.author} ({before.author.id})", inline=False)
+        embed.add_field(name="Channel", value=before.channel.mention, inline=False)
+        embed.add_field(name="Before", value=before.content or "None", inline=False)
+        embed.add_field(name="After", value=after.content or "None", inline=False)
+        await channel.send(embed=embed)
+
+
+@bot.event
+async def on_message_delete(message):
+    if message.author.bot:
+        return
+
+    channel = bot.get_channel(MESSAGE_DELETE_LOG_CHANNEL_ID)
+    if channel:
+        embed = discord.Embed(
+            title="🗑️ Message Deleted",
+            color=discord.Color.red()
+        )
+        embed.add_field(name="User", value=f"{message.author} ({message.author.id})", inline=False)
+        embed.add_field(name="Channel", value=message.channel.mention, inline=False)
+        embed.add_field(name="Content", value=message.content or "None", inline=False)
+        await channel.send(embed=embed)
+
+
+# ========================
+# MEMBER JOIN / LEAVE
 # ========================
 
 @bot.event
 async def on_member_join(member):
+    # Autorole
     role = member.guild.get_role(AUTOROLE_ID)
     if role:
         try:
@@ -72,29 +140,82 @@ async def on_member_join(member):
         except:
             pass
 
+    # Logging
+    channel = bot.get_channel(MEMBER_JOIN_LOG_CHANNEL_ID)
+    if channel:
+        embed = discord.Embed(
+            title="📥 Member Joined",
+            color=discord.Color.green()
+        )
+        embed.add_field(name="User", value=f"{member} ({member.id})", inline=False)
+        embed.add_field(name="Account Created", value=str(member.created_at), inline=False)
+        await channel.send(embed=embed)
+
+    # Anti-alt detection
+    await anti_alt_check(member)
+
+
+@bot.event
+async def on_member_remove(member):
+    channel = bot.get_channel(MEMBER_LEAVE_LOG_CHANNEL_ID)
+    if channel:
+        embed = discord.Embed(
+            title="📤 Member Left",
+            color=discord.Color.red()
+        )
+        embed.add_field(name="User", value=f"{member} ({member.id})", inline=False)
+        await channel.send(embed=embed)
+
+
 # ========================
-# TEMP VOICE
+# ROLE UPDATES
+# ========================
+
+@bot.event
+async def on_member_update(before, after):
+    if before.roles != after.roles:
+        channel = bot.get_channel(ROLE_UPDATE_LOG_CHANNEL_ID)
+        if channel:
+            embed = discord.Embed(
+                title="🎭 Role Update",
+                color=discord.Color.blue()
+            )
+            embed.add_field(name="User", value=f"{after} ({after.id})", inline=False)
+
+            before_set = set(before.roles)
+            after_set = set(after.roles)
+
+            added = after_set - before_set
+            removed = before_set - after_set
+
+            if added:
+                embed.add_field(name="Added Roles", value=", ".join([r.mention for r in added]), inline=False)
+            if removed:
+                embed.add_field(name="Removed Roles", value=", ".join([r.mention for r in removed]), inline=False)
+
+            await channel.send(embed=embed)
+
+
+# ========================
+# VOICE LOGS
 # ========================
 
 @bot.event
 async def on_voice_state_update(member, before, after):
+    # TEMP VOICE (your existing system)
     guild = member.guild
 
-    # Join-to-create
     if after.channel and after.channel.id == TEMP_VOICE_CHANNEL_ID:
         category = guild.get_channel(TEMP_VOICE_CATEGORY_ID)
-
         temp_channel = await guild.create_voice_channel(
             name=f"{member.name}'s Channel",
             category=category
         )
-
         try:
             await member.move_to(temp_channel)
         except:
             pass
 
-    # Delete empty temp channels
     if before.channel and before.channel.category_id == TEMP_VOICE_CATEGORY_ID:
         if before.channel.id != TEMP_VOICE_CHANNEL_ID:
             if len(before.channel.members) == 0:
@@ -103,33 +224,115 @@ async def on_voice_state_update(member, before, after):
                 except:
                     pass
 
-# ========================
-# KEEP ALIVE (Render + UptimeRobot)
-# ========================
+    # VOICE LOGGING
+    channel = bot.get_channel(VOICE_LOG_CHANNEL_ID)
+    if channel:
+        if before.channel != after.channel:
+            embed = discord.Embed(
+                title="🎧 Voice Activity",
+                color=discord.Color.purple()
+            )
+            embed.add_field(name="User", value=f"{member} ({member.id})", inline=False)
+            embed.add_field(name="Before", value=str(before.channel), inline=False)
+            embed.add_field(name="After", value=str(after.channel), inline=False)
+            await channel.send(embed=embed)
 
-app = Flask('')
-
-@app.route('/')
-def home():
-    return "Bot is alive!"
-
-def run():
-    app.run(host='0.0.0.0', port=8080)
-
-def keep_alive():
-    t = Thread(target=run)
-    t.start()
 
 # ========================
-# HELPERS
+# CHANNEL CREATE / DELETE
 # ========================
 
-def is_owner_or_coowner(user: discord.Member):
-    return any(r.id in (OWNER_ID, CO_OWNER_ID) for r in user.roles)
+@bot.event
+async def on_guild_channel_create(channel):
+    log = bot.get_channel(CHANNEL_CREATE_LOG_CHANNEL_ID)
+    if log:
+        embed = discord.Embed(
+            title="📁 Channel Created",
+            color=discord.Color.green()
+        )
+        embed.add_field(name="Name", value=channel.name, inline=False)
+        embed.add_field(name="Type", value=str(channel.type), inline=False)
+        embed.add_field(name="User", value=f"{member} ({member.id})", inline=False)
+        await log.send(embed=embed)
 
-def has_whitelist_permission(member: discord.Member):
-    role_ids = [OWNER_ID, CO_OWNER_ID, WHITELIST_MANAGER_ROLE_ID]
-    return any(r.id in role_ids for r in member.roles)
+
+@bot.event
+async def on_guild_channel_delete(channel):
+    log = bot.get_channel(CHANNEL_DELETE_LOG_CHANNEL_ID)
+    if log:
+        embed = discord.Embed(
+            title="🗑️ Channel Deleted",
+            color=discord.Color.red()
+        )
+        embed.add_field(name="Name", value=channel.name, inline=False)
+        embed.add_field(name="Type", value=str(channel.type), inline=False)
+        embed.add_field(name="User", value=f"{member} ({member.id})", inline=False)
+        await log.send(embed=embed)
+
+
+# ========================
+# ROLE CREATE / DELETE
+# ========================
+
+@bot.event
+async def on_guild_role_create(role):
+    log = bot.get_channel(ROLE_CREATE_LOG_CHANNEL_ID)
+    if log:
+        embed = discord.Embed(
+            title="🎨 Role Created",
+            color=discord.Color.green()
+        )
+        embed.add_field(name="Role", value=role.mention, inline=False)
+        embed.add_field(name="User", value=f"{member} ({member.id})", inline=False)
+        await log.send(embed=embed)
+
+
+@bot.event
+async def on_guild_role_delete(role):
+    log = bot.get_channel(ROLE_DELETE_LOG_CHANNEL_ID)
+    if log:
+        embed = discord.Embed(
+            title="🗑️ Role Deleted",
+            color=discord.Color.red()
+        )
+        embed.add_field(name="Role Name", value=role.name, inline=False)
+        embed.add_field(name="User", value=f"{member} ({member.id})", inline=False)
+        await log.send(embed=embed)
+
+
+# ========================
+# ANTI-ALT DETECTION
+# ========================
+
+async def anti_alt_check(member):
+    channel = bot.get_channel(ALT_ALERT_CHANNEL_ID)
+    if not channel:
+        return
+
+    reasons = []
+
+    # Account age check
+    account_age_days = (discord.utils.utcnow() - member.created_at).days
+    if account_age_days < ALT_MIN_ACCOUNT_AGE_DAYS:
+        reasons.append(f"• Account age: {account_age_days} days")
+
+    # PFP check
+    if ALT_REQUIRE_PFP and not member.avatar:
+        reasons.append("• No profile picture")
+
+    # Suspicious username
+    if ALT_SUSPICIOUS_NAME:
+        if any(char.isdigit() for char in member.name) and len(member.name) < 5:
+            reasons.append("• Suspicious username pattern")
+
+    if reasons:
+        embed = discord.Embed(
+            title="⚠️ Possible ALT Detected",
+            color=discord.Color.red()
+        )
+        embed.add_field(name="User", value=f"{member} ({member.id})", inline=False)
+        embed.add_field(name="Reasons", value="\n".join(reasons), inline=False)
+        await channel.send(embed=embed)
 
 # ========================
 # CLOSE BUTTON VIEW (ΝΕΟ + LOGS)
@@ -400,6 +603,7 @@ class WhitelistReviewView(discord.ui.View):
         reason = msg.content
         await handle_whitelist_decision(interaction, approved=False, reason=reason)
 
+
 async def handle_whitelist_decision(interaction: discord.Interaction, approved: bool, reason: str):
     guild = interaction.guild
     review_message = interaction.message
@@ -472,6 +676,7 @@ async def handle_whitelist_decision(interaction: discord.Interaction, approved: 
         f"Η αίτηση {'εγκρίθηκε' if approved else 'απορρίφθηκε'} επιτυχώς.", ephemeral=True
     )
 
+
 class WhitelistApplyButton(discord.ui.View):
     def __init__(self):
         super().__init__(timeout=None)
@@ -516,7 +721,7 @@ class WhitelistApplyButton(discord.ui.View):
         # Αποθήκευση cooldown
         whitelist_cooldown[user.id] = now + WHITELIST_COOLDOWN_SECONDS
 
-        # Ερωτήσεις (αλλάζεις εσύ)
+        # Ερωτήσεις
         questions = (
             "**1. Πόσο χρονών είσαι;**\n"
             "**2. Πώς σε λένε στο Rolbox;**\n"
@@ -536,7 +741,7 @@ class WhitelistApplyButton(discord.ui.View):
 
         await channel.send(embed=embed, view=TicketCloseView())
 
-        # Στέλνουμε στο review channel για Owner/Co-Owner/Whitelist Manager
+        # Στέλνουμε στο review channel
         review_channel = guild.get_channel(WHITELIST_REVIEW_CHANNEL_ID)
         if review_channel:
             review_embed = discord.Embed(
@@ -642,7 +847,21 @@ async def on_ready():
 # START
 # ================================
 
+app = Flask('')
+
+@app.route('/')
+def home():
+    return "Bot is alive!"
+
+def run():
+    app.run(host='0.0.0.0', port=8080)
+
+def keep_alive():
+    t = Thread(target=run)
+    t.start()
+
 if __name__ == "__main__":
     keep_alive()
     bot.run(TOKEN)
+
 
