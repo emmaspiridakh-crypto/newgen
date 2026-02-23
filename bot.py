@@ -1,4 +1,4 @@
-print("LOADING BOT FILE...")
+print(">>> BOT FILE LOADED <<<")
 import os
 import discord
 import asyncio
@@ -824,6 +824,7 @@ keep_alive()
 
 if __name__ == "__main__":
     bot.run(TOKEN)
+
 
 
 
