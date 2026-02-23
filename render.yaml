@@ -1,6 +1,0 @@
-services:
-  - type: web
-    name: newgen
-    env: python
-    startCommand: "python bot.py"
-    pythonVersion: "3.11"
