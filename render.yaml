@@ -1,0 +1,10 @@
+services:
+  - type: web
+    name: newgen
+    env: docker
+    plan: free
+    autoDeploy: true
+    dockerfilePath: Dockerfile
+    startCommand: "python bot.py"
+    healthCheckPath: "/"
+    numInstances: 1
