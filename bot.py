@@ -810,7 +810,7 @@ async def on_ready():
     print(f"Logged in as {bot.user}")
     try:
         # synced = await bot.tree.sync(guild=discord.Object(id=GUILD_ID))
-        print(f"Synced {len(synced)} commands.")
+        # print(f"Synced {len(synced)} commands.")
     except Exception as e:
         print("Slash sync error:", e)
 
@@ -824,6 +824,7 @@ keep_alive()
 
 if __name__ == "__main__":
     bot.run(TOKEN)
+
 
 
 
