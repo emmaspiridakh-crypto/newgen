@@ -6,6 +6,9 @@ services:
     autoDeploy: true
     dockerfilePath: Dockerfile
     healthCheckPath: "/"
-    healthCheckTimeout: 1000
-    healthCheckInterval: 1000
+    healthCheckInterval: 300
+    healthCheckTimeout: 300
     healthCheckMethod: "GET"
+    envVars:
+      - key: TOKEN
+        sync: false
