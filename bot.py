@@ -119,12 +119,25 @@ async def on_message_edit(before, after):
         embed.add_field(name="After", value=after.content or "None", inline=False)
         await channel.send(embed=embed)
 
-
 @bot.event
 async def on_message_delete(message):
+    # Αγνόησε bot messages
     if message.author.bot:
         return
 
+    # Αγνόησε system messages (boosts, pins, joins, etc.)
+    if message.type != discord.MessageType.default:
+        return
+
+    # Αγνόησε interaction responses (slash commands, buttons, views)
+    if hasattr(message, "interaction") and message.interaction is not None:
+        return
+
+    # Αγνόησε embed-only messages (π.χ. bot embeds χωρίς text)
+    if not message.content and message.embeds:
+        return
+
+    # Τώρα κάνε log ΜΟΝΟ τα κανονικά user messages
     channel = bot.get_channel(MESSAGE_DELETE_LOG_CHANNEL_ID)
     if channel:
         embed = discord.Embed(
@@ -874,6 +887,7 @@ def keep_alive():
 if __name__ == "__main__":
     keep_alive()
     bot.run(TOKEN)
+
 
 
 
