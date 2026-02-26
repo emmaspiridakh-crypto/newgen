@@ -773,17 +773,15 @@ async def ticketpanel(ctx):
             "Για άμεση εξυπηρέτηση, επίλεξε την κατηγορία που ταιριάζει στο αίτημά σου.\n"
             "Η ομάδα μας θα σε εξυπηρετήσει το συντομότερο δυνατό."
         ),
-        color=discord.Color.blue()
+        color=0x2b2d31  # premium dark
     )
 
-    # Banner image (η εικόνα του server σου)
-    embed.set_image(url="https://cdn.discordapp.com/attachments/1332396767548893235/1332396770040324176/Jgr5WzX1Us17dbWZvQeZi.jpeg")  # Βάλε εδώ το link της εικόνας σου
+    # FULL-WIDTH BANNER (όπως στη φωτογραφία)
+    embed.set_image(url="https://cdn.discordapp.com/attachments/1332396767548893235/1332396772047798432/XKqnxvsKdSuAsmnNtvTLy.png")
 
     embed.set_footer(text="Paradox King Remastered • Support System")
 
-    # Dropdown menu με τις ΙΔΙΕΣ κατηγορίες που έχεις ήδη
     await ctx.send(embed=embed, view=MainTicketPanel())
-
     await ctx.reply("Το νέο ticket panel στάλθηκε.", delete_after=2)
 
 @bot.command()
@@ -797,17 +795,14 @@ async def jobpanel(ctx):
             "Επέλεξε την κατηγορία job που ταιριάζει στο αίτημά σου.\n"
             "Η ομάδα μας θα σε εξυπηρετήσει άμεσα."
         ),
-        color=discord.Color.blue()
+        color=0x2b2d31
     )
 
-    # Banner image (η εικόνα του server σου)
-    embed.set_image(url="https://cdn.discordapp.com/attachments/1332396767548893235/1332396770040324176/Jgr5WzX1Us17dbWZvQeZi.jpeg")  # Βάλε εδώ το link της εικόνας σου
+    embed.set_image(url="https://cdn.discordapp.com/attachments/1332396767548893235/1332396772047798432/XKqnxvsKdSuAsmnNtvTLy.png")
 
     embed.set_footer(text="Paradox King Remastered • Job Support")
 
-    # Dropdown menu με τις ΙΔΙΕΣ job categories που έχεις ήδη
     await ctx.send(embed=embed, view=JobTicketPanel())
-
     await ctx.reply("Το νέο job ticket panel στάλθηκε.", delete_after=2)
 
 
@@ -841,6 +836,7 @@ keep_alive()
 
 if __name__ == "__main__":
     bot.run(TOKEN)
+
 
 
 
