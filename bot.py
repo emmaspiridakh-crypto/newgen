@@ -777,7 +777,7 @@ async def ticketpanel(ctx):
     )
 
     # FULL-WIDTH BANNER (όπως στη φωτογραφία)
-    embed.set_image(url="https://cdn.discordapp.com/attachments/1332396767548893235/1332396772047798432/XKqnxvsKdSuAsmnNtvTLy.png")
+    embed.set_image(url="https://cdn.discordapp.com/attachments/1392390677648893236/1392396770040324176/Jgt5WZxlUs17dbWZv0eZ1.jpeg")
 
     embed.set_footer(text="Paradox King Remastered • Support System")
 
@@ -798,7 +798,7 @@ async def jobpanel(ctx):
         color=0x2b2d31
     )
 
-    embed.set_image(url="https://cdn.discordapp.com/attachments/1332396767548893235/1332396772047798432/XKqnxvsKdSuAsmnNtvTLy.png")
+    embed.set_image(url="https://cdn.discordapp.com/attachments/1392390677648893236/1392396770040324176/Jgt5WZxlUs17dbWZv0eZ1.jpeg")
 
     embed.set_footer(text="Paradox King Remastered • Job Support")
 
@@ -836,6 +836,7 @@ keep_alive()
 
 if __name__ == "__main__":
     bot.run(TOKEN)
+
 
 
 
