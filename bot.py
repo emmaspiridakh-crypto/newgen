@@ -777,7 +777,7 @@ async def ticketpanel(ctx):
     )
 
     # Banner image (η εικόνα του server σου)
-    embed.set_image(url="https://imgur.com/a/z93ZKKl")  # Βάλε εδώ το link της εικόνας σου
+    embed.set_image(url="embed.set_image(url="https://cdn.discordapp.com/attachments/1332396767548893235/1332396770040324176/Jgr5WzX1Us17dbWZvQeZi.jpeg")")  # Βάλε εδώ το link της εικόνας σου
 
     embed.set_footer(text="Paradox King Remastered • Support System")
 
@@ -801,7 +801,7 @@ async def jobpanel(ctx):
     )
 
     # Banner image (η εικόνα του server σου)
-    embed.set_image(url="https://imgur.com/a/z93ZKKl")  # Βάλε εδώ το link της εικόνας σου
+    embed.set_image(url="embed.set_image(url="https://cdn.discordapp.com/attachments/1332396767548893235/1332396770040324176/Jgr5WzX1Us17dbWZvQeZi.jpeg")")  # Βάλε εδώ το link της εικόνας σου
 
     embed.set_footer(text="Paradox King Remastered • Job Support")
 
@@ -841,6 +841,7 @@ keep_alive()
 
 if __name__ == "__main__":
     bot.run(TOKEN)
+
 
 
 
