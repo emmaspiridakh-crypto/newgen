@@ -348,7 +348,7 @@ class MainTicketSelect(discord.ui.Select):
             discord.SelectOption(label="Bug", description="Αναφορά bug", emoji="🪲"),
             discord.SelectOption(label="Report", description="Αναφορά παίκτη / συμβάντος", emoji="📙"),
             discord.SelectOption(label="Support", description="Γενικό support", emoji="📩"),
-        ], timeout=None)
+        ]
         super().__init__(placeholder="Επίλεξε κατηγορία ticket....", min_values=1, max_values=1, options=options)
 
     async def callback(self, interaction: discord.Interaction):
@@ -838,6 +838,7 @@ keep_alive()
 
 if __name__ == "__main__":
     bot.run(TOKEN)
+
 
 
 
