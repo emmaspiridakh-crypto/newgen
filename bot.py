@@ -252,6 +252,7 @@ async def on_guild_channel_create(channel):
             title="📁 Channel Created",
             color=discord.Color.green()
         )
+        embed.add_field(name="User", value=f"{member} ({member.id})", inline=False)
         embed.add_field(name="Name", value=channel.name, inline=False)
         embed.add_field(name="Type", value=str(channel.type), inline=False)
         await log.send(embed=embed)
@@ -265,6 +266,7 @@ async def on_guild_channel_delete(channel):
             title="🗑️ Channel Deleted",
             color=discord.Color.red()
         )
+        embed.add_field(name="User", value=f"{member} ({member.id})", inline=False)
         embed.add_field(name="Name", value=channel.name, inline=False)
         embed.add_field(name="Type", value=str(channel.type), inline=False)
         await log.send(embed=embed)
@@ -283,6 +285,7 @@ async def on_guild_role_create(role):
             color=discord.Color.green()
         )
         embed.add_field(name="Role", value=role.mention, inline=False)
+        embed.add_field(name="User", value=f"{member} ({member.id})", inline=False)
         await log.send(embed=embed)
 
 
@@ -295,6 +298,7 @@ async def on_guild_role_delete(role):
             color=discord.Color.red()
         )
         embed.add_field(name="Role Name", value=role.name, inline=False)
+        embed.add_field(name="User", value=f"{member} ({member.id})", inline=False)
         await log.send(embed=embed)
 
 # ========================
@@ -318,14 +322,14 @@ class TicketCloseView(discord.ui.View):
                 description=f"Το ticket έκλεισε από {interaction.user.mention}",
                 color=discord.Color.red()
             )
-            embed.add_field(name="Channel", value=interaction.channel.mention)
+            embed.add_field(name="Channel")
             await log_channel.send(embed=embed)
 
         await interaction.response.send_message(
-            "Το ticket θα κλείσει σε 5 δευτερόλεπτα...", ephemeral=True
+            "Το ticket θα κλείσει σε 2 δευτερόλεπτα...", ephemeral=False
         )
 
-        await asyncio.sleep(5)
+        await asyncio.sleep(2)
 
         try:
             await interaction.channel.delete(reason="Ticket closed")
@@ -344,7 +348,7 @@ class MainTicketSelect(discord.ui.Select):
             discord.SelectOption(label="Bug", description="Αναφορά bug", emoji="🪲"),
             discord.SelectOption(label="Report", description="Αναφορά παίκτη / συμβάντος", emoji="📙"),
             discord.SelectOption(label="Support", description="Γενικό support", emoji="📩"),
-        ]
+        ], timeout=None)
         super().__init__(placeholder="Επίλεξε κατηγορία ticket....", min_values=1, max_values=1, options=options)
 
     async def callback(self, interaction: discord.Interaction):
@@ -418,7 +422,6 @@ class MainTicketSelect(discord.ui.Select):
                 color=discord.Color.blue()
             )
             log_embed.add_field(name="Τύπος", value=ticket_type)
-            log_embed.add_field(name="Channel", value=channel.mention)
             await log_channel.send(embed=log_embed)
 
         # USER RESPONSE
@@ -502,7 +505,6 @@ class JobTicketSelect(discord.ui.Select):
                 color=discord.Color.blue()
             )
             log_embed.add_field(name="Τύπος", value=ticket_type)
-            log_embed.add_field(name="Channel", value=channel.mention)
             await log_channel.send(embed=log_embed)
 
         # USER RESPONSE
@@ -836,6 +838,7 @@ keep_alive()
 
 if __name__ == "__main__":
     bot.run(TOKEN)
+
 
 
 
