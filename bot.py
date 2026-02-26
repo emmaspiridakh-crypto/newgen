@@ -766,26 +766,49 @@ async def dmall(ctx, *, message: str):
 async def ticketpanel(ctx):
     if not is_owner_or_coowner(ctx.author):
         return await ctx.reply("Δεν έχεις δικαίωμα να στείλεις το panel.")
-    embed = discord.Embed(
-        title="🎫 Tickets",
-        description="Επέλεξε την κατηγορία που θέλεις να ανοίξεις ticket.",
-        color=discord.Color.green()
-    )
-    await ctx.send(embed=embed, view=MainTicketPanel())
-    await ctx.reply("Το main ticket panel στάλθηκε.", delete_after=2)
 
+    embed = discord.Embed(
+        title="🎫 Welcome to Paradox King Remastered",
+        description=(
+            "Για άμεση εξυπηρέτηση, επίλεξε την κατηγορία που ταιριάζει στο αίτημά σου.\n"
+            "Η ομάδα μας θα σε εξυπηρετήσει το συντομότερο δυνατό."
+        ),
+        color=discord.Color.blue()
+    )
+
+    # Banner image (η εικόνα του server σου)
+    embed.set_image(url="https://imgur.com/a/z93ZKKl")  # Βάλε εδώ το link της εικόνας σου
+
+    embed.set_footer(text="Paradox King Remastered • Support System")
+
+    # Dropdown menu με τις ΙΔΙΕΣ κατηγορίες που έχεις ήδη
+    await ctx.send(embed=embed, view=MainTicketPanel())
+
+    await ctx.reply("Το νέο ticket panel στάλθηκε.", delete_after=2)
 
 @bot.command()
 async def jobpanel(ctx):
     if not is_owner_or_coowner(ctx.author):
         return await ctx.reply("Δεν έχεις δικαίωμα να στείλεις το panel.")
+
     embed = discord.Embed(
-        title="📋 Job Tickets",
-        description="Επέλεξε job category που θέλεις.",
-        color=discord.Color.green()
+        title="📋 Paradox King Remastered — Job Tickets",
+        description=(
+            "Επέλεξε την κατηγορία job που ταιριάζει στο αίτημά σου.\n"
+            "Η ομάδα μας θα σε εξυπηρετήσει άμεσα."
+        ),
+        color=discord.Color.blue()
     )
+
+    # Banner image (η εικόνα του server σου)
+    embed.set_image(url="https://imgur.com/a/z93ZKKl")  # Βάλε εδώ το link της εικόνας σου
+
+    embed.set_footer(text="Paradox King Remastered • Job Support")
+
+    # Dropdown menu με τις ΙΔΙΕΣ job categories που έχεις ήδη
     await ctx.send(embed=embed, view=JobTicketPanel())
-    await ctx.reply("Το job ticket panel στάλθηκε.", delete_after=2)
+
+    await ctx.reply("Το νέο job ticket panel στάλθηκε.", delete_after=2)
 
 
 @bot.command()
@@ -818,6 +841,7 @@ keep_alive()
 
 if __name__ == "__main__":
     bot.run(TOKEN)
+
 
 
 
