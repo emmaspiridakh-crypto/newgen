@@ -642,7 +642,7 @@ async def ticketpanel(ctx):
         color=0x2b2d31
     )
 
-    embed.set_image(url="https://image2url.com/r2/default/images/1772306369833-48518401-8325-4dba-b548-43f12859329c.png")
+    embed.set_image(url="hhttps://i.imgur.com/oUUKZU4.png")
     embed.set_footer(text="Paradox King Remastered • Support System")
 
     await ctx.send(embed=embed, view=MainTicketPanel())
@@ -667,7 +667,7 @@ async def jobpanel(ctx):
         color=0x2b2d31
     )
 
-    embed.set_image(url="https://image2url.com/r2/default/images/1772306369833-48518401-8325-4dba-b548-43f12859329c.png")
+    embed.set_image(url="https://i.imgur.com/oUUKZU4.png")
     embed.set_footer(text="Paradox King Remastered • Job Support")
 
     await ctx.send(embed=embed, view=JobTicketPanel())
@@ -746,6 +746,7 @@ async def on_ready():
 
 if __name__ == "__main__":
     bot.run(TOKEN)
+
 
 
 
