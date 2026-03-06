@@ -1,5 +1,2 @@
 discord.py
-
-
-discord.py
 flask
