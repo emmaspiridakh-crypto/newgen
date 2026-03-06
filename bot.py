@@ -440,12 +440,11 @@ class JobTicketPanel(discord.ui.View):
         self.add_item(JobTicketSelect())
 
 # ============================
-# ON-DUTY SYSTEM (STAFF + DEVELOPERS)
+# ON-DUTY SYSTEM (STAFF)
 # ============================
 
 # ΒΑΛΕ ΕΔΩ ΤΑ ROLE IDs
 STAFF_DUTY_ROLE_ID = 1476603226462748693  # Staff Duty Role
-DEV_DUTY_ROLE_ID = 1476603396990701629    # Developer Duty Role
 
 
 # ============================
@@ -523,79 +522,6 @@ class StaffDutyView(discord.ui.View):
 
         await interaction.response.send_message(embed=embed, ephemeral=True)
 
-
-# ============================
-# DEVELOPER DUTY PANEL
-# ============================
-
-class DevWorkingView(discord.ui.View):
-    def __init__(self):
-        super().__init__(timeout=None)
-
-    @discord.ui.button(label="Working", style=discord.ButtonStyle.green)
-    async def dev_on(self, interaction: discord.Interaction, button: discord.ui.Button):
-        role = interaction.guild.get_role(DEV_DUTY_ROLE_ID)
-        if not role:
-            return await interaction.response.send_message("❌ Ο ρόλος Developer Working δεν βρέθηκε.", ephemeral=True)
-
-        member = interaction.user
-
-        if role in member.roles:
-            return await interaction.response.send_message("Είσαι ήδη **Working**.", ephemeral=True)
-
-        await member.add_roles(role)
-
-        duty_data[str(member.id)] = duty_data.get(str(member.id), {"hours": 0, "start": None})
-        duty_data[str(member.id)]["start"] = time.time()
-        save_duty_data(duty_data)
-
-        await interaction.response.send_message("🟦 Μπήκες **Working** (Developer).", ephemeral=True)
-
-    @discord.ui.button(label="Off Working", style=discord.ButtonStyle.red)
-    async def dev_off(self, interaction: discord.Interaction, button: discord.ui.Button):
-        role = interaction.guild.get_role(DEV_DUTY_ROLE_ID)
-        if not role:
-            return await interaction.response.send_message("❌ Ο ρόλος Developer Working δεν βρέθηκε.", ephemeral=True)
-
-        member = interaction.user
-
-        if role not in member.roles:
-            return await interaction.response.send_message("Δεν είσαι **Working**.", ephemeral=True)
-
-        await member.remove_roles(role)
-
-        entry = duty_data.get(str(member.id))
-        if entry and entry["start"]:
-            elapsed = (time.time() - entry["start"]) / 3600
-            entry["hours"] += elapsed
-            entry["start"] = None
-            save_duty_data(duty_data)
-
-        await interaction.response.send_message("🟥 Βγήκες **Off Working** (Developer).", ephemeral=True)
-
-    @discord.ui.button(label="Work Stats", style=discord.ButtonStyle.blurple)
-    async def dev_stats(self, interaction: discord.Interaction, button: discord.ui.Button):
-        embed = discord.Embed(
-            title="📊 Developer Work Stats",
-            color=discord.Color.blurple()
-        )
-
-        for uid, info in duty_data.items():
-            member = interaction.guild.get_member(int(uid))
-            if not member:
-                continue
-
-            hours = info["hours"]
-            if info["start"]:
-                hours += (time.time() - info["start"]) / 3600
-
-            embed.add_field(
-                name=member.name,
-                value=f"{hours:.2f} ώρες",
-                inline=False
-            )
-
-        await interaction.response.send_message(embed=embed, ephemeral=True)
 
 # ========================
 # COMMANDS
@@ -711,26 +637,6 @@ async def staffduty(ctx):
     await ctx.send(embed=embed, view=StaffDutyView())
     await ctx.reply("Το Staff Duty Panel στάλθηκε.", delete_after=2)
 
-
-# ========================
-# DEVELOPER DUTY PANEL COMMAND
-# ========================
-
-@bot.command()
-async def devduty(ctx):
-    if not is_owner_or_coowner(ctx.author):
-        return await ctx.reply("Δεν έχεις δικαίωμα.")
-
-    embed = discord.Embed(
-        title="🟦 Developer On-Off-Work Panel",
-        description="Πάτησε ένα κουμπί:",
-        color=discord.Color.yellow()
-    )
-
-    await ctx.send(embed=embed, view=DevDutyView())
-    await ctx.reply("Το Developer Working Panel στάλθηκε.", delete_after=2)
-
-
 # ================================
 # EVENTS
 # ================================
@@ -746,6 +652,7 @@ async def on_ready():
 
 if __name__ == "__main__":
     bot.run(TOKEN)
+
 
 
 
