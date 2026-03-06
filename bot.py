@@ -6,8 +6,6 @@ import json
 import time
 from discord.ext import commands
 from discord import app_commands
-from keep_alive import keep_alive
-keep_alive()
 
 # ========================
 # CONFIG
@@ -748,6 +746,7 @@ async def on_ready():
 
 if __name__ == "__main__":
     bot.run(TOKEN)
+
 
 
 
