@@ -4,9 +4,23 @@ import discord
 import asyncio
 import json
 import time
+from flask import Flask
+from threading import Thread
 from discord.ext import commands
 from discord import app_commands
 
+app = Flask('')
+
+@app.route('/')
+def home():
+    return "OK"
+
+def run():
+    app.run(host='0.0.0.0', port=10000)
+
+def keep_alive():
+    t = Thread(target=run)
+    t.start()
 # ========================
 # CONFIG
 # ========================
@@ -632,6 +646,7 @@ async def on_ready():
 # ================================
 
 if __name__ == "__main__":
+     keep_alive()
     bot.run(TOKEN)
 
 
