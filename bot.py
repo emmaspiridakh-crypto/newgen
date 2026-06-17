@@ -503,7 +503,7 @@ class JobTicketSelect(discord.ui.Select):
         if log_channel:
             log_embed = discord.Embed(
                 title="📂 Νέο Ticket",
-                description=f"Ο χρήστης {author.mention} άνοιξε ticket
+                description=f"Ο χρήστης {author.mention} άνοιξε ticket"
 
 # ============================
 # ON-DUTY SYSTEM (STAFF)
