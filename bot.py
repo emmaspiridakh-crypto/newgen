@@ -20,47 +20,48 @@ TOKEN = os.getenv("TOKEN")
 intents = discord.Intents.all()
 bot = commands.Bot(command_prefix="!", intents=intents)
 
-GUILD_ID = 1469054622550462720
+GUILD_ID = 1516805388622626887
 
 # ROLE IDs
-OWNER_ID = 1469054622965567594
-CO_OWNER_ID = 1469054622965567593
-DEVELOPER_ID = 1469054622957305897
-ORGANIZER_ID = 1469054622957305906
-STAFF_ID = 1469054622919295216
-CIVILIAN_ORG_ID = 1469054622957305900
-CRIMINAL_ORG_ID = 1469054622957305899
+OWNER_ID = 1516805388647792698
+CO_OWNER_ID = 1516805388647792697
+CO_DIRECTOR_ID = 1516805388647792696
+DEVELOPER_ID = 1516805388639670358
+ORGANIZER_ID = 1516805388647792693
+STAFF_ID = 1516805388639670357
+CIVILIAN_ORG_ID = 1516835369125941309
+CRIMINAL_ORG_ID = 1516805388639670360
 
 # CATEGORY IDs
-MAIN_TICKET_CATEGORY_ID = 1469054624077189183
-JOB_TICKET_CATEGORY_ID = 1469698048686030931
+MAIN_TICKET_CATEGORY_ID = 1516805390128648367
+JOB_TICKET_CATEGORY_ID = 1516834911913250966
 
 # AUTOROLE
-AUTOROLE_ID = 1469054622906847473
+AUTOROLE_ID = 1516805388622626893
 
 # TEMP VOICE
-TEMP_VOICE_CATEGORY_ID = 1469054624077189184
-TEMP_VOICE_CHANNEL_ID = 1469054624077189187
+TEMP_VOICE_CATEGORY_ID = 1516842553838800986
+TEMP_VOICE_CHANNEL_ID = 1516805389642109015
 
 # LOG CHANNELS
-LOG_CHANNEL_ID = 1474026151004340336
-MESSAGE_EDIT_LOG_CHANNEL_ID = 1475520124894052465
-MESSAGE_DELETE_LOG_CHANNEL_ID = 1475520124894052465
-MEMBER_JOIN_LOG_CHANNEL_ID = 1475519852163895552
-MEMBER_LEAVE_LOG_CHANNEL_ID = 1475519852163895552
-ROLE_UPDATE_LOG_CHANNEL_ID = 1475520225792364716
-VOICE_LOG_CHANNEL_ID = 1475520000461766726
-CHANNEL_CREATE_LOG_CHANNEL_ID = 1475526632193396796
-CHANNEL_DELETE_LOG_CHANNEL_ID = 1475526632193396796
-ROLE_CREATE_LOG_CHANNEL_ID = 1475520225792364716
-ROLE_DELETE_LOG_CHANNEL_ID = 1475520225792364716
+LOG_CHANNEL_ID = 1516805389642109013
+MESSAGE_EDIT_LOG_CHANNEL_ID = 1516805389126209630
+MESSAGE_DELETE_LOG_CHANNEL_ID = 1516805389126209630
+MEMBER_JOIN_LOG_CHANNEL_ID = 1516805389126209627
+MEMBER_LEAVE_LOG_CHANNEL_ID = 1516805389126209627
+ROLE_UPDATE_LOG_CHANNEL_ID = 1516805389126209628
+VOICE_LOG_CHANNEL_ID = 1516805389126209633
+CHANNEL_CREATE_LOG_CHANNEL_ID = 1516805389126209629
+CHANNEL_DELETE_LOG_CHANNEL_ID = 1516805389126209629
+ROLE_CREATE_LOG_CHANNEL_ID = 1516805389126209628
+ROLE_DELETE_LOG_CHANNEL_ID = 1516805389126209628
 
 # ========================
 # HELPERS
 # ========================
 
-def is_owner_or_coowner(user: discord.Member):
-    return any(r.id in (OWNER_ID, CO_OWNER_ID) for r in user.roles)
+def is_owner_or_coowner_or_codirector(user: discord.Member):
+    return any(r.id in (OWNER_ID, CO_OWNER_ID, CO_DIRECTOR_ID) for r in user.roles)
 
 # ========================
 # DUTY SYSTEM STORAGE
@@ -247,10 +248,10 @@ class TicketCloseView(discord.ui.View):
             await log_channel.send(embed=embed)
 
         await interaction.response.send_message(
-            "Το ticket θα κλείσει σε 2 δευτερόλεπτα...", ephemeral=False
+            "Το ticket θα κλείσει σε 5 δευτερόλεπτα...", ephemeral=False
         )
 
-        await asyncio.sleep(2)
+        await asyncio.sleep(5)
 
         try:
             await interaction.channel.delete(reason="Ticket closed")
@@ -264,13 +265,13 @@ class TicketCloseView(discord.ui.View):
 class MainTicketSelect(discord.ui.Select):
     def __init__(self):
         options = [
-            discord.SelectOption(label="Owner", description="Επικοινωνία με Owners / Co-Owners", emoji="👑"),
+            discord.SelectOption(label="Owner", description="Επικοινωνία με Ownership", emoji="👑"),
             discord.SelectOption(label="Bug", description="Αναφορά bug", emoji="🪲"),
             discord.SelectOption(label="Report", description="Αναφορά παίκτη / συμβάντος", emoji="📙"),
             discord.SelectOption(label="Support", description="Γενικό support", emoji="📩"),
         ]
         super().__init__(
-            placeholder="Επίλεξε κατηγορία ticket...",
+            placeholder="Επίλεξε κατηγορία ticket...>",
             min_values=1,
             max_values=1,
             options=options
@@ -290,22 +291,22 @@ class MainTicketSelect(discord.ui.Select):
         }
 
         if self.values[0] == "Owner":
-            roles_ids = [OWNER_ID, CO_OWNER_ID]
+            roles_ids = [OWNER_ID, CO_OWNER_ID, CO_DIRECTOR_ID]
             name = f"owner-{author.name}".replace(" ", "-").lower()
             ticket_type = "Owner Ticket"
 
         elif self.values[0] == "Bug":
-            roles_ids = [DEVELOPER_ID, OWNER_ID, CO_OWNER_ID]
+            roles_ids = [DEVELOPER_ID, OWNER_ID, CO_OWNER_ID, CO_DIRECTOR_ID]
             name = f"bug-{author.name}".replace(" ", "-").lower()
             ticket_type = "Bug Report"
 
         elif self.values[0] == "Report":
-            roles_ids = [ORGANIZER_ID, OWNER_ID, CO_OWNER_ID]
+            roles_ids = [ORGANIZER_ID, OWNER_ID, CO_OWNER_ID, CO_DIRECTOR_ID]
             name = f"report-{author.name}".replace(" ", "-").lower()
             ticket_type = "Report"
 
         else:
-            roles_ids = [STAFF_ID, OWNER_ID, CO_OWNER_ID]
+            roles_ids = [STAFF_ID, OWNER_ID, CO_OWNER_ID, CO_DIRECTOR_ID]
             name = f"support-{author.name}".replace(" ", "-").lower()
             ticket_type = "Support Ticket"
 
@@ -326,7 +327,7 @@ class MainTicketSelect(discord.ui.Select):
         embed = discord.Embed(
             title=f"🎫 Ticket από {author.name}",
             description=f"{author.mention} άνοιξε **{ticket_type}**.\n"
-                        f"Παρακαλώ περιμένετε να σας εξυπηρετήσει ένα staff.",
+                        f"Παρακαλώ περιμένετε να σας εξυπηρετήσουμε.",
             color=discord.Color.green()
         )
 
@@ -362,11 +363,11 @@ class MainTicketPanel(discord.ui.View):
 class JobTicketSelect(discord.ui.Select):
     def __init__(self):
         options = [
-            discord.SelectOption(label="Civilian Job", description="Civilian job", emoji="👮"),
-            discord.SelectOption(label="Criminal Job", description="Criminal job", emoji="🕵️"),
+            discord.SelectOption(label="Civilian Job", description="Get your Civilian Job", emoji="👮"),
+            discord.SelectOption(label="Criminal Job", description="Get your Criminal job", emoji="🕵️"),
         ]
         super().__init__(
-            placeholder="Επιλέξτε job category...",
+            placeholder="Επιλέξτε Job Category...>",
             min_values=1,
             max_values=1,
             options=options
@@ -411,7 +412,7 @@ class JobTicketSelect(discord.ui.Select):
         embed = discord.Embed(
             title=f"🎫 Ticket από {author.name}",
             description=f"{author.mention} άνοιξε **{ticket_type}**.\n"
-                        f"Παρακαλώ περιμένετε να σας εξυπηρετήσει ένας Organizer.",
+                        f"Παρακαλώ περιμένετε να σας εξυπηρετήσει ένας Manager.",
             color=discord.Color.green()
         )
 
@@ -444,7 +445,7 @@ class JobTicketPanel(discord.ui.View):
 # ============================
 
 # ΒΑΛΕ ΕΔΩ ΤΑ ROLE IDs
-STAFF_DUTY_ROLE_ID = 1476603226462748693  # Staff Duty Role
+STAFF_DUTY_ROLE_ID = 1516805388639670353  # Staff Duty Role
 
 
 # ============================
@@ -529,14 +530,14 @@ class StaffDutyView(discord.ui.View):
 
 @bot.command()
 async def say(ctx, *, message: str):
-    if not is_owner_or_coowner(ctx.author):
+    if not is_owner_or_coowner_or_codirector(ctx.author):
         return await ctx.reply("Δεν έχεις δικαίωμα να χρησιμοποιήσεις αυτή την εντολή.")
     await ctx.send(message)
 
 
 @bot.command()
 async def dmall(ctx, *, message: str):
-    if not is_owner_or_coowner(ctx.author):
+    if not is_owner_or_coowner_or_codirector(ctx.author):
         return await ctx.reply("Δεν έχεις δικαίωμα να χρησιμοποιήσεις αυτή την εντολή.")
     sent = 0
     for member in ctx.guild.members:
@@ -556,11 +557,11 @@ async def dmall(ctx, *, message: str):
 
 @bot.command()
 async def ticketpanel(ctx):
-    if not is_owner_or_coowner(ctx.author):
+    if not is_owner_or_coowner_or_codirector(ctx.author):
         return await ctx.reply("Δεν έχεις δικαίωμα να στείλεις το panel.")
 
     embed = discord.Embed(
-        title="🎫 Welcome to Paradox King Remastered",
+        title="🎫 Welcome to Panamera Roleplay",
         description=(
             "Για άμεση εξυπηρέτηση, επίλεξε την κατηγορία που ταιριάζει στο αίτημά σου.\n"
             "Η ομάδα μας θα σε εξυπηρετήσει το συντομότερο δυνατό."
@@ -568,11 +569,11 @@ async def ticketpanel(ctx):
         color=0x2b2d31
     )
 
-    embed.set_image(url="hhttps://i.imgur.com/oUUKZU4.png")
-    embed.set_footer(text="Paradox King Remastered • Support System")
+    embed.set_image(url="https://i.imgur.com/xAJWMlq.jpeg")
+    embed.set_footer(text="Panamera Roleplay • Support System")
 
     await ctx.send(embed=embed, view=MainTicketPanel())
-    await ctx.reply("Το νέο ticket panel στάλθηκε.", delete_after=2)
+    await ctx.reply("Το νέο ticket panel στάλθηκε.", delete_after=1)
 
 
 # ========================
@@ -581,11 +582,11 @@ async def ticketpanel(ctx):
 
 @bot.command()
 async def jobpanel(ctx):
-    if not is_owner_or_coowner(ctx.author):
+    if not is_owner_or_coowner_or_codirector(ctx.author):
         return await ctx.reply("Δεν έχεις δικαίωμα να στείλεις το panel.")
 
     embed = discord.Embed(
-        title="📋 Paradox King Remastered — Job Tickets",
+        title="📋 Panamera Roleplay — Job Tickets",
         description=(
             "Επέλεξε την κατηγορία job που ταιριάζει στο αίτημά σου.\n"
             "Η ομάδα μας θα σε εξυπηρετήσει άμεσα."
@@ -593,31 +594,11 @@ async def jobpanel(ctx):
         color=0x2b2d31
     )
 
-    embed.set_image(url="https://i.imgur.com/oUUKZU4.png")
-    embed.set_footer(text="Paradox King Remastered • Job Support")
+    embed.set_image(url="https://i.imgur.com/xAJWMlq.jpeg")
+    embed.set_footer(text="Panamera Roleplay • Job Support")
 
     await ctx.send(embed=embed, view=JobTicketPanel())
-    await ctx.reply("Το νέο job ticket panel στάλθηκε.", delete_after=2)
-
-
-# ========================
-# WHITELIST PANEL COMMAND
-# ========================
-
-@bot.command()
-async def whitelistpanel(ctx):
-    if not is_owner_or_coowner(ctx.author):
-        return await ctx.reply("Δεν έχεις δικαίωμα να στείλεις το panel.")
-
-    embed = discord.Embed(
-        title="📋 Whitelist Application",
-        description="Πάτησε το κουμπί για να κάνεις αίτηση whitelist.",
-        color=discord.Color.green()
-    )
-
-    await ctx.send(embed=embed, view=WhitelistApplyButton())
-    await ctx.reply("Το whitelist panel στάλθηκε.", delete_after=2)
-
+    await ctx.reply("Το νέο job ticket panel στάλθηκε.", delete_after=1)
 
 # ========================
 # STAFF DUTY PANEL COMMAND
@@ -625,7 +606,7 @@ async def whitelistpanel(ctx):
 
 @bot.command()
 async def staffduty(ctx):
-    if not is_owner_or_coowner(ctx.author):
+    if not is_owner_or_coowner_or_codirector(ctx.author):
         return await ctx.reply("Δεν έχεις δικαίωμα.")
 
     embed = discord.Embed(
@@ -635,7 +616,7 @@ async def staffduty(ctx):
     )
 
     await ctx.send(embed=embed, view=StaffDutyView())
-    await ctx.reply("Το Staff Duty Panel στάλθηκε.", delete_after=2)
+    await ctx.reply("Το Staff Duty Panel στάλθηκε.", delete_after=1)
 
 # ================================
 # EVENTS
