@@ -195,7 +195,7 @@ async def on_member_update(before, after):
             )
             embed.add_field(name="Member", value=f"{after} ({after.id})", inline=False)
             embed.add_field(name="Role", value=role.mention, inline=False)
-            embed.add_field(name="Moderator", value=f"{user.mention}", inline=False)
+            embed.add_field(name="Moderator", value=f"{mention.author}", inline=False)
             await log.send(embed=embed)
 
     if removed:
@@ -206,7 +206,7 @@ async def on_member_update(before, after):
             )
             embed.add_field(name="Member", value=f"{after} ({after.id})", inline=False)
             embed.add_field(name="Role", value=role.name, inline=False)
-            embed.add_field(name="Moderator", value=f"{user.mention}", inline=False)
+            embed.add_field(name="Moderator", value=f"{mention.author}", inline=False)
             await log.send(embed=embed)
 
 # ========================
