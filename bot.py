@@ -21,6 +21,7 @@ def run():
 def keep_alive():
     t = Thread(target=run)
     t.start()
+
 # ========================
 # CONFIG
 # ========================
@@ -136,6 +137,79 @@ async def on_message_delete(message):
         await channel.send(embed=embed)
 
 # ========================
+# AUTOROLE + JOIN/LEAVE LOGS
+# ========================
+
+@bot.event
+async def on_member_join(member):
+    role = member.guild.get_role(AUTOROLE_ID)
+    log = bot.get_channel(MEMBER_JOIN_LOG_CHANNEL_ID)
+
+    if role:
+        try:
+            await member.add_roles(role)
+        except:
+            pass
+
+    if log:
+        embed = discord.Embed(
+            title="📥 Member Joined",
+            description=f"{member.mention} μπήκε στον server.",
+            color=discord.Color.green()
+        )
+        embed.add_field(name="Autorole", value=role.mention if role else "Not Found")
+        await log.send(embed=embed)
+
+@bot.event
+async def on_member_remove(member):
+    log = bot.get_channel(MEMBER_LEAVE_LOG_CHANNEL_ID)
+    if log:
+        embed = discord.Embed(
+            title="📤 Member Left",
+            description=f"{member} έφυγε από τον server.",
+            color=discord.Color.red()
+        )
+        await log.send(embed=embed)
+
+# ========================
+# ROLE UPDATE LOGS (ΠΟΙΟΣ ΕΔΩΣΕ/ΕΒΓΑΛΕ ΡΟΛΟ)
+# ========================
+
+@bot.event
+async def on_member_update(before, after):
+    log = bot.get_channel(ROLE_UPDATE_LOG_CHANNEL_ID)
+    if not log:
+        return
+
+    before_roles = set(before.roles)
+    after_roles = set(after.roles)
+
+    added = after_roles - before_roles
+    removed = before_roles - after_roles
+
+    if added:
+        for role in added:
+            embed = discord.Embed(
+                title="➕ Role Added",
+                color=discord.Color.green()
+            )
+            embed.add_field(name="Member", value=f"{after} ({after.id})", inline=False)
+            embed.add_field(name="Role", value=role.mention, inline=False)
+            embed.add_field(name="Moderator", value=interaction.user.mention, inline=False)
+            await log.send(embed=embed)
+
+    if removed:
+        for role in removed:
+            embed = discord.Embed(
+                title="➖ Role Removed",
+                color=discord.Color.red()
+            )
+            embed.add_field(name="Member", value=f"{after} ({after.id})", inline=False)
+            embed.add_field(name="Role", value=role.name, inline=False)
+            embed.add_field(name="Moderator", value=interaction.user.mention, inline=False)
+            await log.send(embed=embed)
+
+# ========================
 # VOICE LOGS
 # ========================
 
@@ -178,7 +252,6 @@ async def on_voice_state_update(member, before, after):
         embed.add_field(name="After", value=str(after.channel), inline=False)
         await channel.send(embed=embed)
 
-
 # ========================
 # CHANNEL CREATE / DELETE
 # ========================
@@ -195,7 +268,6 @@ async def on_guild_channel_create(channel):
         embed.add_field(name="Type", value=str(channel.type), inline=False)
         await log.send(embed=embed)
 
-
 @bot.event
 async def on_guild_channel_delete(channel):
     log = bot.get_channel(CHANNEL_DELETE_LOG_CHANNEL_ID)
@@ -207,7 +279,6 @@ async def on_guild_channel_delete(channel):
         embed.add_field(name="Name", value=channel.name, inline=False)
         embed.add_field(name="Type", value=str(channel.type), inline=False)
         await log.send(embed=embed)
-
 
 # ========================
 # ROLE CREATE / DELETE
@@ -224,7 +295,6 @@ async def on_guild_role_create(role):
         embed.add_field(name="Role", value=role.mention, inline=False)
         await log.send(embed=embed)
 
-
 @bot.event
 async def on_guild_role_delete(role):
     log = bot.get_channel(ROLE_DELETE_LOG_CHANNEL_ID)
@@ -235,7 +305,6 @@ async def on_guild_role_delete(role):
         )
         embed.add_field(name="Role Name", value=role.name, inline=False)
         await log.send(embed=embed)
-
 
 # ========================
 # CLOSE BUTTON VIEW
@@ -363,12 +432,10 @@ class MainTicketSelect(discord.ui.Select):
             ephemeral=True
         )
 
-
 class MainTicketPanel(discord.ui.View):
     def __init__(self):
         super().__init__(timeout=None)
         self.add_item(MainTicketSelect())
-
 
 # ============================
 # JOB TICKET PANEL
@@ -436,23 +503,7 @@ class JobTicketSelect(discord.ui.Select):
         if log_channel:
             log_embed = discord.Embed(
                 title="📂 Νέο Ticket",
-                description=f"Ο χρήστης {author.mention} άνοιξε ticket.",
-                color=discord.Color.blue()
-            )
-            log_embed.add_field(name="Τύπος", value=ticket_type)
-            log_embed.add_field(name="Channel", value=channel.mention)
-            await log_channel.send(embed=log_embed)
-
-        await interaction.response.send_message(
-            f"Το job ticket σου δημιουργήθηκε: {channel.mention}",
-            ephemeral=True
-        )
-
-
-class JobTicketPanel(discord.ui.View):
-    def __init__(self):
-        super().__init__(timeout=None)
-        self.add_item(JobTicketSelect())
+                description=f"Ο χρήστης {author.mention} άνοιξε ticket
 
 # ============================
 # ON-DUTY SYSTEM (STAFF)
