@@ -504,7 +504,7 @@ class JobTicketSelect(discord.ui.Select):
             log_embed = discord.Embed(
                 title="📂 Νέο Ticket",
                 description=f"Ο χρήστης {author.mention} άνοιξε ticket"
-
+        )
 # ============================
 # ON-DUTY SYSTEM (STAFF)
 # ============================
